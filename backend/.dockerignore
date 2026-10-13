@@ -1,0 +1,16 @@
+node_modules
+dist
+src/generated
+coverage
+.git
+.gitignore
+.env
+.env.*
+*.log
+pnpm-debug.log*
+*.tsbuildinfo
+.vscode
+.idea
+README*
+Dockerfile
+.dockerignore
