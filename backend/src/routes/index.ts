@@ -1,6 +1,7 @@
-import { Router } from 'express';
-import { rutasHolamundo } from '@/modules/holamundo/holamundo.routes';
+import { Router } from "express";
+
+import { rutasHolamundo } from "@/modules/holamundo/holamundo.routes";
 
 export const apiRouter = Router();
 
-apiRouter.use('/holamundo', rutasHolamundo);
+apiRouter.use("/holamundo", rutasHolamundo);

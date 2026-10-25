@@ -1,4 +1,4 @@
-FROM node:24.21-alpine AS base
+FROM node:24.22-alpine AS base
 RUN corepack enable
 WORKDIR /app
 
@@ -37,9 +37,9 @@ RUN pnpm install --prod --frozen-lockfile \
     && rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack \
         /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack \
         /usr/local/bin/pnpm /usr/local/bin/pnpx
-COPY --from=build /app/dist ./dist
+COPY --from=build /app/dist/server.js ./dist/server.js
 USER node
 EXPOSE 3000
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
     CMD wget -q --spider "http://127.0.0.1:${PORT:-3000}/api/v1/holamundo" || exit 1
 CMD ["node", "dist/server.js"]
