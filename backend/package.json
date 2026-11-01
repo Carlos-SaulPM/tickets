@@ -32,6 +32,7 @@
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
+    "argon2": "^0.45.1",
     "cors": "^2.8.6",
     "dotenv": "^18.0.6",
     "express": "^5.2.1",
@@ -56,5 +57,14 @@
     "tsx": "^4.23.15",
     "typescript": "5.9.3",
     "typescript-eslint": "^8.71.1"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "argon2",
+      "esbuild",
+      "prisma",
+      "@prisma/engines",
+      "@prisma/client"
+    ]
   }
 }
