@@ -1,3 +1,5 @@
+import type { AuthUsuario } from "@/types/autenticacion.types";
+
 declare global {
   namespace Express {
     interface Request {
@@ -6,6 +8,7 @@ declare global {
         query?: unknown;
         params?: unknown;
       };
+      usuario?: AuthUsuario;
     }
   }
 }

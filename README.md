@@ -131,6 +131,8 @@ El servicio `migrate` aplica las migraciones antes de arrancar las apps. Los pue
 | `POSTGRES_USER` | `postgres` | Usuario de la base de datos |
 | `POSTGRES_PASSWORD` | `postgres` | Contraseña (cámbiala en producción) |
 | `POSTGRES_DB` | `tickets` | Nombre de la base de datos |
+| `JWT_SECRET` | — | Clave para firmar JWT (mínimo 32 caracteres, obligatoria) |
+| `JWT_EXPIRES_IN` | `3600` | Duración del token en segundos |
 | `APP_PORT` | `3000` | Puerto del backend en desarrollo |
 | `FRONTEND_PORT` | `3001` | Puerto del frontend en desarrollo |
 | `APP_PROD_PORT` | `8080` | Puerto del backend en producción |

@@ -3,26 +3,26 @@
     "module": "preserve",
     "moduleResolution": "bundler",
     "target": "es2022",
-    "lib": ["es2022"],
-    "types": ["node"],
-
-    "baseUrl": ".",
+    "lib": [
+      "es2022"
+    ],
+    "types": [
+      "node"
+    ],
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": [
+        "./src/*"
+      ]
     },
-
     "sourceMap": true,
     "noEmit": true,
-
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
-
     "noImplicitReturns": true,
     "noImplicitOverride": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-
     "strict": true,
     "verbatimModuleSyntax": true,
     "isolatedModules": true,
@@ -30,5 +30,9 @@
     "moduleDetection": "force",
     "skipLibCheck": true
   },
-  "include": ["src", "tsup.config.ts", "prisma.config.ts"]
+  "include": [
+    "src",
+    "tsup.config.ts",
+    "prisma.config.ts"
+  ]
 }
