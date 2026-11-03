@@ -23,7 +23,8 @@ RUN DATABASE_URL="$DATABASE_URL" pnpm prisma generate \
 FROM deps AS migrate
 COPY prisma.config.ts ./
 COPY prisma ./prisma
-CMD ["pnpm", "prisma", "migrate", "deploy"]
+COPY --from=build /app/src/generated ./src/generated
+CMD ["sh", "-c", "pnpm prisma migrate deploy && pnpm prisma db seed"]
 
 FROM base AS prod
 ENV NODE_ENV=production \

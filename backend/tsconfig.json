@@ -6,9 +6,8 @@
     "lib": ["es2022"],
     "types": ["node"],
 
-    "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["./src/*"]
     },
 
     "sourceMap": true,
@@ -30,5 +29,5 @@
     "moduleDetection": "force",
     "skipLibCheck": true
   },
-  "include": ["src", "tsup.config.ts", "prisma.config.ts"]
+  "include": ["src", "tsup.config.ts", "prisma.config.ts", "prisma/seed.ts", "vitest.config.ts"]
 }

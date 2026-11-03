@@ -1,29 +1,32 @@
-export type UserRole = "Admin" | "Soporte" | "Usuario";
+export type UserRole = "Administrador" | "Soporte" | "Usuario";
 export type EstadoUsuario = "Activo" | "Inactivo" | "Baja";
 
+export interface UserRoleSummary {
+  id: string;
+  nombre: UserRole;
+}
+
 export interface User {
-  id_usuario: string;
+  id: string;
   nombre: string;
   apellido_paterno: string;
   apellido_materno: string;
-  email: string;
-  id_rol: string;
-  id_area: string | null;
+  correo_electronico: string;
+  rol: UserRoleSummary;
   estado: EstadoUsuario;
-  created_at: string;
+  creado_en: string;
 }
 
 export interface CreateUserInput {
   nombre: string;
   apellido_paterno: string;
   apellido_materno: string;
-  email: string;
-  id_rol: string;
-  id_area?: string;
+  correo_electronico: string;
+  rol_id: string;
 }
 
 export interface CreateUserResponse {
-  usuario: string;
+  correo_electronico: string;
   contrasena: string;
   user: User;
 }
@@ -32,7 +35,6 @@ export interface UpdateUserInput {
   nombre?: string;
   apellido_paterno?: string;
   apellido_materno?: string;
-  id_rol?: string;
-  id_area?: string | null;
+  rol_id?: string;
   estado?: EstadoUsuario;
 }

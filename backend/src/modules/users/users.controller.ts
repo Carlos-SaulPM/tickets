@@ -1,172 +1,101 @@
 import type { Request, Response } from "express";
-
-import { ApiError } from "@/utils/api-error";
+import { z } from "zod";
 
 import { createUserSchema, updateUserSchema } from "./users.schema";
 import { UsersService } from "./users.service";
 
 const userService = new UsersService();
 
-export class usersController {
+const getUserId = (params: Request["params"]): string | null => {
+  const id = params.id;
+  return typeof id === "string" && z.uuid().safeParse(id).success ? id : null;
+};
+
+export class UsersController {
   static async create(req: Request, res: Response) {
-    try {
-      const requestedRole = req.usuario?.rol;
-      const validation = createUserSchema.safeParse(req.body);
+    const validation = createUserSchema.safeParse(req.body);
 
-      if (!validation.success) {
-        return res.status(400).json({
-          message: "Datos de entrada inválidos",
-          errors: validation.error.issues,
-        });
-      }
-
-      const result = await userService.createUser({
-        data: validation.data,
-        requestedRole,
-      });
-
-      return res.status(201).json({
-        message: "usuario creado correctamente",
-        data: result,
-      });
-    } catch (error: unknown) {
-      if (error instanceof ApiError) {
-        return res.status(error.status).json({
-          message: error.message,
-        });
-      }
-
-      console.error(error);
-      return res.status(500).json({
-        message: "Error interno del servidor",
+    if (!validation.success) {
+      return res.status(400).json({
+        error: "Datos de entrada inválidos",
+        issues: validation.error.issues,
       });
     }
+
+    const result = await userService.createUser({
+      data: validation.data,
+      requestedRole: req.usuario?.rol,
+    });
+
+    return res.status(201).json({
+      message: "Usuario creado correctamente",
+      data: result,
+    });
   }
 
   static async update(req: Request, res: Response) {
-    try {
-      const requestedRole = req.usuario?.rol;
-      const { id } = req.params;
+    const id = getUserId(req.params);
 
-      if (typeof id !== "string" || !id.trim()) {
-        return res.status(400).json({
-          message: "El id no es válido o no existe",
-        });
-      }
+    if (!id) {
+      return res.status(400).json({ error: "El id no es válido o no existe" });
+    }
 
-      const validation = updateUserSchema.safeParse(req.body);
+    const validation = updateUserSchema.safeParse(req.body);
 
-      if (!validation.success) {
-        return res.status(400).json({
-          message: "datos inválidos",
-          errors: validation.error.issues,
-        });
-      }
-
-      const updatedUser = await userService.editUser({
-        id,
-        data: validation.data,
-        requestedRole,
-      });
-
-      return res.status(200).json({
-        message: "Usuario actualizado exitosamente",
-        data: updatedUser,
-      });
-    } catch (error: unknown) {
-      if (error instanceof ApiError) {
-        return res.status(error.status).json({
-          message: error.message,
-        });
-      }
-
-      console.error(error);
-      return res.status(500).json({
-        message: "Error interno del servidor",
+    if (!validation.success) {
+      return res.status(400).json({
+        error: "Datos de entrada inválidos",
+        issues: validation.error.issues,
       });
     }
+
+    const updatedUser = await userService.editUser({
+      id,
+      data: validation.data,
+      requestedRole: req.usuario?.rol,
+    });
+
+    return res.status(200).json({
+      message: "Usuario actualizado exitosamente",
+      data: updatedUser,
+    });
   }
 
   static async delete(req: Request, res: Response) {
-    try {
-      const { id } = req.params;
-      const requestedRole = req.usuario?.rol;
+    const id = getUserId(req.params);
 
-      if (typeof id !== "string" || !id.trim()) {
-        return res.status(400).json({
-          message: "El id no es válido o no existe",
-        });
-      }
-
-      await userService.safeDelete({ id, requestedRole });
-
-      return res.status(200).json({
-        message: "Usuario dado de baja (safe delete) correctamente",
-      });
-    } catch (error: unknown) {
-      if (error instanceof ApiError) {
-        return res.status(error.status).json({
-          message: error.message,
-        });
-      }
-
-      console.error(error);
-      return res.status(500).json({
-        message: "Error interno del servidor",
-      });
+    if (!id) {
+      return res.status(400).json({ error: "El id no es válido o no existe" });
     }
+
+    await userService.safeDelete({ id, requestedRole: req.usuario?.rol });
+
+    return res.status(200).json({
+      message: "Usuario dado de baja correctamente",
+    });
   }
 
   static async getAll(req: Request, res: Response) {
-    try {
-      const requestedRole = req.usuario?.rol;
-      const usuarios = await userService.getAll(requestedRole);
+    const usuarios = await userService.getAll(req.usuario?.rol);
 
-      return res.status(200).json({
-        message: "Usuarios obtenidos con éxito",
-        data: usuarios,
-      });
-    } catch (error: unknown) {
-      if (error instanceof ApiError) {
-        return res.status(error.status).json({
-          message: error.message,
-        });
-      }
-
-      console.error(error);
-      return res.status(500).json({
-        message: "Error interno del servidor",
-      });
-    }
+    return res.status(200).json({
+      message: "Usuarios obtenidos con éxito",
+      data: usuarios,
+    });
   }
+
   static async getById(req: Request, res: Response) {
-    try {
-      const { id } = req.params;
-      const requestedRole = req.usuario?.rol;
+    const id = getUserId(req.params);
 
-      if (typeof id !== "string" || !id.trim()) {
-        return res.status(400).json({
-          message: "El id no es válido o no existe",
-        });
-      }
-
-      const usuario = await userService.getById(id, requestedRole);
-
-      return res.status(200).json({
-        message: "Se ha recuperado el usuario correctamente",
-        data: usuario,
-      });
-    } catch (error: unknown) {
-      if (error instanceof ApiError) {
-        return res.status(error.status).json({
-          message: error.message,
-        });
-      }
-
-      console.error(error);
-      return res.status(500).json({
-        message: "Error interno del servidor",
-      });
+    if (!id) {
+      return res.status(400).json({ error: "El id no es válido o no existe" });
     }
+
+    const usuario = await userService.getById(id, req.usuario?.rol);
+
+    return res.status(200).json({
+      message: "Se ha recuperado el usuario correctamente",
+      data: usuario,
+    });
   }
 }

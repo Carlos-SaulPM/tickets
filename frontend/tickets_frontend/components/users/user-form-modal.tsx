@@ -1,8 +1,9 @@
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -12,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { createUserSchema } from "@/schemas/user.schema";
+import type { Role } from "@/types/role.types";
 import type { CreateUserInput, User } from "@/types/user.types";
 
 interface UserFormModalProps {
@@ -19,9 +21,16 @@ interface UserFormModalProps {
   onClose: () => void;
   onSubmit: (data: CreateUserInput) => Promise<void>;
   initialData?: User | null;
+  roles: Role[];
 }
 
-export function UserFormModal({ isOpen, onClose, onSubmit, initialData }: UserFormModalProps) {
+export function UserFormModal({
+  isOpen,
+  onClose,
+  onSubmit,
+  initialData,
+  roles,
+}: UserFormModalProps) {
   const isEditing = Boolean(initialData);
 
   const {
@@ -34,24 +43,26 @@ export function UserFormModal({ isOpen, onClose, onSubmit, initialData }: UserFo
     resolver: zodResolver(createUserSchema),
   });
 
+  const assignableRoles = roles.filter(
+    role => role.nombre !== "Administrador" || initialData?.rol.nombre === "Administrador"
+  );
+
   useEffect(() => {
     if (initialData) {
       reset({
         nombre: initialData.nombre,
         apellido_paterno: initialData.apellido_paterno,
         apellido_materno: initialData.apellido_materno,
-        email: initialData.email,
-        id_rol: initialData.id_rol,
-        id_area: initialData.id_area || "",
+        correo_electronico: initialData.correo_electronico,
+        rol_id: initialData.rol.id,
       });
     } else {
       reset({
         nombre: "",
         apellido_paterno: "",
         apellido_materno: "",
-        email: "",
-        id_rol: "",
-        id_area: "",
+        correo_electronico: "",
+        rol_id: "",
       });
     }
   }, [initialData, reset, isOpen]);
@@ -95,42 +106,34 @@ export function UserFormModal({ isOpen, onClose, onSubmit, initialData }: UserFo
               placeholder="Correo Electrónico"
               type="email"
               disabled={isEditing}
-              {...register("email")}
+              {...register("correo_electronico")}
             />
-            {errors.email && (
-              <p className="text-destructive mt-1 text-xs">{errors.email.message?.toString()}</p>
+            {errors.correo_electronico && (
+              <p className="text-destructive mt-1 text-xs">
+                {errors.correo_electronico.message?.toString()}
+              </p>
             )}
           </div>
           <div>
             <Select
-              onValueChange={val => setValue("id_rol", val)}
-              defaultValue={initialData?.id_rol}
+              key={`${initialData?.id ?? "new"}-${isOpen ? "open" : "closed"}`}
+              defaultValue={initialData?.rol.id ?? ""}
+              onValueChange={value => setValue("rol_id", value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Seleccionar Rol" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="rol-soporte-id">Soporte</SelectItem>
-                <SelectItem value="rol-usuario-id">Usuario</SelectItem>
+                {assignableRoles.map(role => (
+                  <SelectItem key={role.id} value={role.id}>
+                    {role.nombre}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
-            {errors.id_rol && (
-              <p className="text-destructive mt-1 text-xs">{errors.id_rol.message?.toString()}</p>
+            {errors.rol_id && (
+              <p className="text-destructive mt-1 text-xs">{errors.rol_id.message?.toString()}</p>
             )}
-          </div>
-          <div>
-            <Select
-              onValueChange={val => setValue("id_area", val)}
-              defaultValue={initialData?.id_area || ""}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccionar Área (Opcional)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="area-123">Área 123</SelectItem>
-                <SelectItem value="area-456">Área 456</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={onClose}>

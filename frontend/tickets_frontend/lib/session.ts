@@ -11,7 +11,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
 
 const isUserRole = (value: unknown): value is UserRole =>
-  value === "Admin" || value === "Soporte" || value === "Usuario";
+  value === "Administrador" || value === "Soporte" || value === "Usuario";
 
 const isAuthUser = (value: unknown): value is AuthUser => {
   if (!isRecord(value)) return false;
@@ -19,7 +19,7 @@ const isAuthUser = (value: unknown): value is AuthUser => {
   return (
     typeof value.id === "string" &&
     typeof value.nombre === "string" &&
-    typeof value.correo === "string" &&
+    typeof value.correo_electronico === "string" &&
     isUserRole(value.rol)
   );
 };

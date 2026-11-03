@@ -1,14 +1,14 @@
 import type { UserRole } from "./user.types";
 
 export interface LoginInput {
-  correo: string;
+  correo_electronico: string;
   contrasena: string;
 }
 
 export interface AuthUser {
   id: string;
   nombre: string;
-  correo: string;
+  correo_electronico: string;
   rol: UserRole;
 }
 

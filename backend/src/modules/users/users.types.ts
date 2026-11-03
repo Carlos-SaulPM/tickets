@@ -1,47 +1,51 @@
+import type { EstadoUsuario, NombreRol } from "@/generated/prisma/enums";
+
 import type { CreateUserInput, UpdateUserInput } from "./users.schema";
 
-export type UserRole = "Admin" | "Soporte" | "Usuario";
-
-export type EstadoUsuario = "Activo" | "Inactivo" | "Baja";
+export interface UserRoleSummary {
+  id: string;
+  nombre: NombreRol;
+}
 
 export interface User {
-  id_usuario: string;
+  id: string;
   nombre: string;
   apellido_paterno: string;
   apellido_materno: string;
-  email: string;
-  password: string;
-  id_rol: string;
-  id_area: string | null;
+  correo_electronico: string;
+  rol: UserRoleSummary;
   estado: EstadoUsuario;
-  created_at: Date;
+  creado_en: Date;
 }
 
 export interface CreateUserDTO {
   data: CreateUserInput;
-  requestedRole?: UserRole | undefined;
+  requestedRole?: NombreRol | undefined;
 }
 
 export interface CreateUserRepositoryDTO {
   nombre: string;
   apellido_paterno: string;
   apellido_materno: string;
-  email: string;
-  id_rol: string;
-  id_area: string | null;
+  correo_electronico: string;
+  rol_id: string;
 }
 
 export interface UpdateUserDTO {
   id: string;
   data: UpdateUserInput;
-  requestedRole?: UserRole | undefined;
+  requestedRole?: NombreRol | undefined;
 }
 
-export type UpdateUserRepositoryDTO = Partial<
-  Pick<User, "nombre" | "apellido_paterno" | "apellido_materno" | "id_rol" | "id_area" | "estado">
->;
+export interface UpdateUserRepositoryDTO {
+  nombre?: string;
+  apellido_paterno?: string;
+  apellido_materno?: string;
+  rol_id?: string;
+  estado?: EstadoUsuario;
+}
 
 export interface DeleteUserDTO {
   id: string;
-  requestedRole?: UserRole | undefined;
+  requestedRole?: NombreRol | undefined;
 }

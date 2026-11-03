@@ -31,7 +31,7 @@ export function Navbar() {
             Sistema de Tickets
           </Link>
           <nav className="flex items-center gap-4">
-            {session?.usuario.rol === "Admin" && (
+            {session?.usuario.rol === "Administrador" && (
               <Link href="/users" className={linkClass(pathname === "/users")}>
                 Usuarios
               </Link>
@@ -49,7 +49,7 @@ export function Navbar() {
             <>
               <div className="hidden items-center gap-2 sm:flex">
                 <span className="text-sm font-medium">{session.usuario.nombre}</span>
-                <Badge variant={session.usuario.rol === "Admin" ? "default" : "secondary"}>
+                <Badge variant={session.usuario.rol === "Administrador" ? "default" : "secondary"}>
                   {session.usuario.rol}
                 </Badge>
               </div>

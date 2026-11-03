@@ -7,11 +7,190 @@ datasource db {
   provider = "postgresql"
 }
 
+enum EstadoUsuario {
+  Activo
+  Inactivo
+  Baja
+}
+
+enum PrioridadTicket {
+  Baja
+  Media
+  Alta
+  Critica
+}
+
+enum EstadoTicket {
+  Abierto
+  En_proceso
+  Resuelto
+  Cerrado
+}
+
+enum NombreRol {
+  Administrador
+  Soporte
+  Usuario
+}
+
+enum TipoEventoHistorial {
+  CREACION
+  CAMBIO_ESTADO
+  REASIGNACION
+  CAMBIO_PRIORIDAD
+}
+
+model Rol {
+  id          String    @id @default(uuid()) @db.Uuid
+  nombre      NombreRol @unique
+  descripcion String?
+  usuarios    Usuario[]
+
+  @@map("roles")
+}
+
+model Usuario {
+  id                 String        @id @default(uuid()) @db.Uuid
+  nombre             String        @db.VarChar(50)
+  apellido_paterno   String        @db.VarChar(50)
+  apellido_materno   String        @db.VarChar(50)
+  correo_electronico String        @unique @db.VarChar(100)
+  contrasena         String        @db.VarChar(255)
+  rol_id             String        @db.Uuid
+  estado             EstadoUsuario @default(Activo)
+  creado_en          DateTime      @default(now()) @db.Timestamptz(6)
+
+  rol               Rol               @relation(fields: [rol_id], references: [id], onDelete: Restrict)
+  tickets_creados   Ticket[]          @relation("TicketCreador")
+  tickets_asignados Ticket[]          @relation("TicketAsignado")
+  mensajes          TicketMensaje[]
+  archivos_subidos  ArchivoAdjunto[]
+  historial         HistorialTicket[]
+  notificaciones    Notificacion[]
+
+  @@index([rol_id])
+  @@map("usuarios")
+}
+
+model Area {
+  id      String   @id @default(uuid()) @db.Uuid
+  nombre  String   @unique @db.VarChar(50)
+  activo  Boolean  @default(true)
+  tickets Ticket[]
+
+  @@map("areas")
+}
+
+model Categoria {
+  id          String   @id @default(uuid()) @db.Uuid
+  nombre      String   @unique @db.VarChar(50)
+  descripcion String?
+  tickets     Ticket[]
+
+  @@map("categorias")
+}
+
 model Ticket {
-  id            Int      @id @default(autoincrement())
-  titulo        String
-  descripcion   String?
-  estado        String   @default("abierto")
-  creadoEn      DateTime @default(now())
-  actualizadoEn DateTime @updatedAt
+  id                 String          @id @default(uuid()) @db.Uuid
+  codigo             String          @unique @db.VarChar(20)
+  asunto             String          @db.VarChar(150)
+  descripcion        String
+  prioridad          PrioridadTicket @default(Media)
+  estado             EstadoTicket    @default(Abierto)
+  categoria_id       String          @db.Uuid
+  area_id            String?         @db.Uuid
+  usuario_creador_id String          @db.Uuid
+  asignado_a_id      String?         @db.Uuid
+  creado_en          DateTime        @default(now()) @db.Timestamptz(6)
+  actualizado_en     DateTime        @default(now()) @updatedAt @db.Timestamptz(6)
+  fecha_cierre       DateTime?       @db.Timestamptz(6)
+
+  categoria       Categoria         @relation(fields: [categoria_id], references: [id], onDelete: Restrict)
+  area            Area?             @relation(fields: [area_id], references: [id], onDelete: SetNull)
+  usuario_creador Usuario           @relation("TicketCreador", fields: [usuario_creador_id], references: [id], onDelete: Restrict)
+  asignado_a      Usuario?          @relation("TicketAsignado", fields: [asignado_a_id], references: [id], onDelete: SetNull)
+  mensajes        TicketMensaje[]
+  archivos        ArchivoAdjunto[]
+  historial       HistorialTicket[]
+  notificaciones  Notificacion[]
+
+  @@index([categoria_id])
+  @@index([area_id])
+  @@index([usuario_creador_id])
+  @@index([asignado_a_id])
+  @@index([estado])
+  @@index([prioridad])
+  @@map("tickets")
+}
+
+model TicketMensaje {
+  id              String   @id @default(uuid()) @db.Uuid
+  ticket_id       String   @db.Uuid
+  usuario_id      String   @db.Uuid
+  mensaje         String
+  es_nota_interna Boolean  @default(false)
+  creado_en       DateTime @default(now()) @db.Timestamptz(6)
+
+  ticket   Ticket           @relation(fields: [ticket_id], references: [id], onDelete: Cascade)
+  usuario  Usuario          @relation(fields: [usuario_id], references: [id], onDelete: Restrict)
+  archivos ArchivoAdjunto[]
+
+  @@index([ticket_id])
+  @@index([usuario_id])
+  @@map("ticket_mensajes")
+}
+
+model ArchivoAdjunto {
+  id                String   @id @default(uuid()) @db.Uuid
+  ticket_id         String   @db.Uuid
+  mensaje_id        String?  @db.Uuid
+  nombre_original   String   @db.VarChar(255)
+  nombre_almacenado String   @db.VarChar(255)
+  tipo_mime         String?  @db.VarChar(100)
+  ruta_url          String   @db.VarChar(500)
+  subido_por_id     String   @db.Uuid
+  creado_en         DateTime @default(now()) @db.Timestamptz(6)
+
+  ticket     Ticket         @relation(fields: [ticket_id], references: [id], onDelete: Cascade)
+  mensaje    TicketMensaje? @relation(fields: [mensaje_id], references: [id], onDelete: SetNull)
+  subido_por Usuario        @relation(fields: [subido_por_id], references: [id], onDelete: Restrict)
+
+  @@index([ticket_id])
+  @@index([mensaje_id])
+  @@index([subido_por_id])
+  @@map("archivos_adjuntos")
+}
+
+model HistorialTicket {
+  id              String              @id @default(uuid()) @db.Uuid
+  ticket_id       String              @db.Uuid
+  usuario_id      String              @db.Uuid
+  tipo_evento     TipoEventoHistorial
+  estado_anterior EstadoTicket?
+  estado_nuevo    EstadoTicket?
+  detalle         String?
+  fecha_cambio    DateTime            @default(now()) @db.Timestamptz(6)
+
+  ticket  Ticket  @relation(fields: [ticket_id], references: [id], onDelete: Cascade)
+  usuario Usuario @relation(fields: [usuario_id], references: [id], onDelete: Restrict)
+
+  @@index([ticket_id])
+  @@index([usuario_id])
+  @@map("historial_tickets")
+}
+
+model Notificacion {
+  id         String   @id @default(uuid()) @db.Uuid
+  usuario_id String   @db.Uuid
+  ticket_id  String?  @db.Uuid
+  mensaje    String
+  leida      Boolean  @default(false)
+  creado_en  DateTime @default(now()) @db.Timestamptz(6)
+
+  usuario Usuario @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+  ticket  Ticket? @relation(fields: [ticket_id], references: [id], onDelete: SetNull)
+
+  @@index([usuario_id])
+  @@index([ticket_id])
+  @@map("notificaciones")
 }

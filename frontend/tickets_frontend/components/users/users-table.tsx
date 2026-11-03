@@ -35,7 +35,7 @@ export function UsersTable({ users, onEdit, onDelete, onOpenCreate }: UsersTable
   const filteredUsers = users.filter(user => {
     const matchesSearch =
       user.nombre.toLowerCase().includes(search.toLowerCase()) ||
-      user.email.toLowerCase().includes(search.toLowerCase());
+      user.correo_electronico.toLowerCase().includes(search.toLowerCase());
     const matchesStatus = statusFilter === "all" || user.estado === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -84,6 +84,7 @@ export function UsersTable({ users, onEdit, onDelete, onOpenCreate }: UsersTable
             <TableRow>
               <TableHead>Nombre</TableHead>
               <TableHead>Email</TableHead>
+              <TableHead>Rol</TableHead>
               <TableHead>Estado</TableHead>
               <TableHead className="text-right">Acciones</TableHead>
             </TableRow>
@@ -91,15 +92,16 @@ export function UsersTable({ users, onEdit, onDelete, onOpenCreate }: UsersTable
           <TableBody>
             {paginatedUsers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-muted-foreground py-6 text-center">
+                <TableCell colSpan={5} className="text-muted-foreground py-6 text-center">
                   No se encontraron usuarios.
                 </TableCell>
               </TableRow>
             ) : (
               paginatedUsers.map(user => (
-                <TableRow key={user.id_usuario}>
+                <TableRow key={user.id}>
                   <TableCell className="font-medium">{`${user.nombre} ${user.apellido_paterno}`}</TableCell>
-                  <TableCell>{user.email}</TableCell>
+                  <TableCell>{user.correo_electronico}</TableCell>
+                  <TableCell>{user.rol.nombre}</TableCell>
                   <TableCell>
                     <Badge variant={user.estado === "Activo" ? "default" : "secondary"}>
                       {user.estado}
@@ -113,7 +115,7 @@ export function UsersTable({ users, onEdit, onDelete, onOpenCreate }: UsersTable
                       size="sm"
                       variant="destructive"
                       disabled={user.estado === "Baja"}
-                      onClick={() => onDelete(user.id_usuario)}
+                      onClick={() => onDelete(user.id)}
                     >
                       Eliminar
                     </Button>

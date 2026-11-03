@@ -4,3 +4,6 @@ package-lock.json
 npm-shrinkwrap.json
 yarn.lock
 opencode.json
+.agents
+skills-lock.json
+AGENTS.md

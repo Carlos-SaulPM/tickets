@@ -23,7 +23,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { session } = useAuth();
 
-  const [correo, setCorreo] = useState("");
+  const [correoElectronico, setCorreoElectronico] = useState("");
   const [contrasena, setContrasena] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -34,8 +34,11 @@ export default function LoginPage() {
     setIsSubmitting(true);
 
     try {
-      const usuario = await authService.login({ correo: correo.trim(), contrasena });
-      router.replace(usuario.rol === "Admin" ? "/users" : "/perfil");
+      const usuario = await authService.login({
+        correo_electronico: correoElectronico.trim(),
+        contrasena,
+      });
+      router.replace(usuario.rol === "Administrador" ? "/users" : "/perfil");
     } catch (loginError: unknown) {
       setError(
         loginError instanceof ApiError ? loginError.message : "No se pudo iniciar sesión"
@@ -63,14 +66,14 @@ export default function LoginPage() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="correo">Correo</Label>
+              <Label htmlFor="correo_electronico">Correo electrónico</Label>
               <Input
-                id="correo"
+                id="correo_electronico"
                 type="email"
                 autoComplete="username"
                 placeholder="usuario@ejemplo.com"
-                value={correo}
-                onChange={event => setCorreo(event.target.value)}
+                value={correoElectronico}
+                onChange={event => setCorreoElectronico(event.target.value)}
                 required
               />
             </div>
@@ -92,7 +95,7 @@ export default function LoginPage() {
               <p className="text-muted-foreground text-sm">
                 Ya tienes una sesión activa.{" "}
                 <Link
-                  href={session.usuario.rol === "Admin" ? "/users" : "/perfil"}
+                  href={session.usuario.rol === "Administrador" ? "/users" : "/perfil"}
                   className="text-foreground underline underline-offset-4"
                 >
                   Continuar

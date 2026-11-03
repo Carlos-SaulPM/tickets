@@ -20,13 +20,16 @@ import { UserFormModal } from "@/components/users/user-form-modal";
 import { UsersTable } from "@/components/users/users-table";
 import { useAuth } from "@/hooks/use-auth";
 import { ApiError } from "@/lib/api";
+import { getSession } from "@/lib/session";
 import { authService } from "@/services/auth.service";
+import { rolesService } from "@/services/roles.service";
 import { usersService } from "@/services/users.service";
-import type { CreateUserInput, User } from "@/types/user.types";
+import type { Role } from "@/types/role.types";
+import type { CreateUserInput, UpdateUserInput, User } from "@/types/user.types";
 
 interface CreatedCredentials {
-  email: string;
-  password: string;
+  correo_electronico: string;
+  contrasena: string;
 }
 
 const getErrorMessage = (error: unknown) =>
@@ -37,14 +40,15 @@ export default function UsersPage() {
   const { session, isClient } = useAuth();
 
   const [users, setUsers] = useState<User[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [createdCredentials, setCreatedCredentials] = useState<CreatedCredentials | null>(null);
 
-  const isAdmin = session?.usuario.rol === "Admin";
+  const isAdmin = session?.usuario.rol === "Administrador";
 
   useEffect(() => {
-    if (isClient && !session) {
+    if (isClient && !getSession()) {
       router.replace("/login");
     }
   }, [isClient, session, router]);
@@ -54,10 +58,12 @@ export default function UsersPage() {
 
     let cancelled = false;
 
-    usersService
-      .getAll()
-      .then(data => {
-        if (!cancelled) setUsers(data);
+    Promise.all([usersService.getAll(), rolesService.getAll()])
+      .then(([usersData, rolesData]) => {
+        if (!cancelled) {
+          setUsers(usersData);
+          setRoles(rolesData);
+        }
       })
       .catch((error: unknown) => {
         if (cancelled) return;
@@ -108,11 +114,24 @@ export default function UsersPage() {
   const handleSubmit = async (formData: CreateUserInput) => {
     try {
       if (selectedUser) {
-        await usersService.update(selectedUser.id_usuario, formData);
+        const changes: UpdateUserInput = {
+          nombre: formData.nombre,
+          apellido_paterno: formData.apellido_paterno,
+          apellido_materno: formData.apellido_materno,
+        };
+
+        if (formData.rol_id !== selectedUser.rol.id) {
+          changes.rol_id = formData.rol_id;
+        }
+
+        await usersService.update(selectedUser.id, changes);
         toast.success("Usuario actualizado correctamente");
       } else {
         const created = await usersService.create(formData);
-        setCreatedCredentials({ email: created.usuario, password: created.contrasena });
+        setCreatedCredentials({
+          correo_electronico: created.correo_electronico,
+          contrasena: created.contrasena,
+        });
         toast.success("Usuario creado correctamente");
       }
 
@@ -165,6 +184,7 @@ export default function UsersPage() {
           onClose={() => setIsModalOpen(false)}
           onSubmit={handleSubmit}
           initialData={selectedUser}
+          roles={roles}
         />
 
         <Dialog
@@ -185,11 +205,11 @@ export default function UsersPage() {
               <div className="space-y-3">
                 <div className="space-y-1">
                   <Label>Correo</Label>
-                  <Input readOnly value={createdCredentials.email} />
+                  <Input readOnly value={createdCredentials.correo_electronico} />
                 </div>
                 <div className="space-y-1">
                   <Label>Contraseña temporal</Label>
-                  <Input readOnly value={createdCredentials.password} />
+                  <Input readOnly value={createdCredentials.contrasena} />
                 </div>
               </div>
             )}

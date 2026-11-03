@@ -4,3 +4,6 @@ allowBuilds:
   prisma: true
   "@prisma/engines": true
   "@prisma/client": true
+  cpu-features: false
+  protobufjs: false
+  ssh2: false

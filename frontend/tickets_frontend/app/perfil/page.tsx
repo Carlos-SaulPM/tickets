@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
 import { ApiError } from "@/lib/api";
+import { getSession } from "@/lib/session";
 import { authService } from "@/services/auth.service";
 import type { AuthUser } from "@/types/auth.types";
 
@@ -26,7 +27,7 @@ export default function PerfilPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isClient && !session) {
+    if (isClient && !getSession()) {
       router.replace("/login");
     }
   }, [isClient, session, router]);
@@ -90,20 +91,20 @@ export default function PerfilPage() {
 
             <div className="grid gap-1">
               <span className="text-muted-foreground text-sm">Correo</span>
-              <span className="font-medium">{perfil.correo}</span>
+              <span className="font-medium">{perfil.correo_electronico}</span>
             </div>
 
             <div className="grid gap-1">
               <span className="text-muted-foreground text-sm">Rol</span>
               <div>
-                <Badge variant={perfil.rol === "Admin" ? "default" : "secondary"}>
+                <Badge variant={perfil.rol === "Administrador" ? "default" : "secondary"}>
                   {perfil.rol}
                 </Badge>
               </div>
             </div>
 
             <div className="flex flex-wrap gap-2 pt-2">
-              {perfil.rol === "Admin" && (
+              {perfil.rol === "Administrador" && (
                 <Button onClick={() => router.push("/users")}>Gestionar usuarios</Button>
               )}
               <Button variant="outline" onClick={handleLogout}>
