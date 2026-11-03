@@ -2,9 +2,10 @@ import { getToken } from "@/lib/session";
 
 const DEFAULT_API_BASE_URL = "http://localhost:3000/api/v1";
 
-export const API_BASE_URL = (
-  process.env.NEXT_PUBLIC_API_URL || DEFAULT_API_BASE_URL
-).replace(/\/$/, "");
+export const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || DEFAULT_API_BASE_URL).replace(
+  /\/$/,
+  ""
+);
 
 export class ApiError extends Error {
   readonly status: number;
@@ -19,7 +20,7 @@ export class ApiError extends Error {
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
 
-const getErrorMessage = (payload: unknown, status: number): string => {
+const getErrorMessage = (payload: unknown, status: number) => {
   if (isRecord(payload)) {
     if (typeof payload.error === "string") return payload.error;
     if (typeof payload.message === "string") return payload.message;

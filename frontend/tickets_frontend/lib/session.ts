@@ -55,12 +55,12 @@ export const getSession = (): Session | null => parseSession(getSessionSnapshot(
 
 export const getToken = (): string | null => getSession()?.token ?? null;
 
-export const saveSession = (session: Session): void => {
+export const saveSession = (session: Session) => {
   window.localStorage.setItem(SESSION_KEY, JSON.stringify(session));
   notify();
 };
 
-export const clearSession = (): void => {
+export const clearSession = () => {
   window.localStorage.removeItem(SESSION_KEY);
   notify();
 };

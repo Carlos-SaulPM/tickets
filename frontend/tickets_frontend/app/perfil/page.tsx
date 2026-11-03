@@ -1,18 +1,12 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { Navbar } from "@/components/layout/Navbar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
 import { ApiError } from "@/lib/api";
 import { getSession } from "@/lib/session";
@@ -62,7 +56,9 @@ export default function PerfilPage() {
   }, [isClient, session, router]);
 
   if (!isClient || !session) {
-    return <div className="text-muted-foreground p-8 text-sm">Redirigiendo al inicio de sesión...</div>;
+    return (
+      <div className="text-muted-foreground p-8 text-sm">Redirigiendo al inicio de sesión...</div>
+    );
   }
 
   const perfil = usuario ?? session.usuario;

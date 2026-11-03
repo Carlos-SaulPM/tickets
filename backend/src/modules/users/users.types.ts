@@ -35,6 +35,7 @@ export interface UpdateUserDTO {
   id: string;
   data: UpdateUserInput;
   requestedRole?: NombreRol | undefined;
+  requestedUserId?: string | undefined;
 }
 
 export interface UpdateUserRepositoryDTO {
@@ -48,4 +49,5 @@ export interface UpdateUserRepositoryDTO {
 export interface DeleteUserDTO {
   id: string;
   requestedRole?: NombreRol | undefined;
+  requestedUserId?: string | undefined;
 }

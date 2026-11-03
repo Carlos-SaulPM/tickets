@@ -75,7 +75,7 @@ export class UsersService {
         contrasena: generatedPassword,
         user: savedUser,
       };
-    } catch (error: unknown) {
+    } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
         throw new ApiError(409, "El correo electrónico ya se encuentra registrado");
       }
@@ -84,8 +84,12 @@ export class UsersService {
     }
   }
 
-  async editUser({ id, data, requestedRole }: UpdateUserDTO) {
+  async editUser({ id, data, requestedRole, requestedUserId }: UpdateUserDTO) {
     this.verifyAdminRole(requestedRole);
+
+    if (id === requestedUserId && data.estado === EstadoUsuario.Baja) {
+      throw new ApiError(403, "No puedes darte de baja a ti mismo");
+    }
 
     const existingUser = await this.repository.findById(id);
 
@@ -118,8 +122,12 @@ export class UsersService {
     return updatedUser;
   }
 
-  async safeDelete({ id, requestedRole }: DeleteUserDTO) {
+  async safeDelete({ id, requestedRole, requestedUserId }: DeleteUserDTO) {
     this.verifyAdminRole(requestedRole);
+
+    if (id === requestedUserId) {
+      throw new ApiError(403, "No puedes eliminarte a ti mismo");
+    }
 
     const existingUser = await this.repository.findById(id);
 

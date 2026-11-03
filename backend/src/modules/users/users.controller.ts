@@ -6,7 +6,7 @@ import { UsersService } from "./users.service";
 
 const userService = new UsersService();
 
-const getUserId = (params: Request["params"]): string | null => {
+const getUserId = (params: Request["params"]) => {
   const id = params.id;
   return typeof id === "string" && z.uuid().safeParse(id).success ? id : null;
 };
@@ -53,6 +53,7 @@ export class UsersController {
       id,
       data: validation.data,
       requestedRole: req.usuario?.rol,
+      requestedUserId: req.usuario?.id,
     });
 
     return res.status(200).json({
@@ -68,7 +69,11 @@ export class UsersController {
       return res.status(400).json({ error: "El id no es válido o no existe" });
     }
 
-    await userService.safeDelete({ id, requestedRole: req.usuario?.rol });
+    await userService.safeDelete({
+      id,
+      requestedRole: req.usuario?.rol,
+      requestedUserId: req.usuario?.id,
+    });
 
     return res.status(200).json({
       message: "Usuario dado de baja correctamente",

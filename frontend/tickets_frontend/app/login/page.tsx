@@ -1,8 +1,8 @@
 "use client";
 
+import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { type FormEvent, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -28,7 +28,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     setError(null);
     setIsSubmitting(true);
@@ -39,10 +39,8 @@ export default function LoginPage() {
         contrasena,
       });
       router.replace(usuario.rol === "Administrador" ? "/users" : "/perfil");
-    } catch (loginError: unknown) {
-      setError(
-        loginError instanceof ApiError ? loginError.message : "No se pudo iniciar sesión"
-      );
+    } catch (loginError) {
+      setError(loginError instanceof ApiError ? loginError.message : "No se pudo iniciar sesión");
     } finally {
       setIsSubmitting(false);
     }
@@ -53,9 +51,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle>Iniciar sesión</CardTitle>
-          <CardDescription>
-            Accede con la cuenta que te asignó un administrador.
-          </CardDescription>
+          <CardDescription>Accede con la cuenta que te asignó un administrador.</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">

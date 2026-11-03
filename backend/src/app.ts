@@ -10,9 +10,16 @@ import { apiRouter } from "@/routes/index";
 export const createApp = (): Express => {
   const app = express();
 
+  app.disable("etag");
+
   app.use(cors());
   app.use(express.json());
   app.use(morgan(env.NODE_ENV === "production" ? "combined" : "dev"));
+
+  app.use("/api/v1", (_req, res, next) => {
+    res.setHeader("Cache-Control", "no-store");
+    next();
+  });
 
   app.use("/api/v1", apiRouter);
 

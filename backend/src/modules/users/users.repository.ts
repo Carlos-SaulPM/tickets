@@ -1,11 +1,7 @@
 import { prisma } from "@/db/prisma";
 import type { Prisma } from "@/generated/prisma/client";
 
-import type {
-  CreateUserRepositoryDTO,
-  UpdateUserRepositoryDTO,
-  User,
-} from "./users.types";
+import type { CreateUserRepositoryDTO, UpdateUserRepositoryDTO, User } from "./users.types";
 
 const userSelect = {
   id: true,

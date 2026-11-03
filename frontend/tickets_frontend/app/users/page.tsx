@@ -1,7 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast, Toaster } from "sonner";
 
 import { Navbar } from "@/components/layout/Navbar";
@@ -96,7 +96,7 @@ export default function UsersPage() {
     try {
       const data = await usersService.getAll();
       setUsers(data);
-    } catch (error: unknown) {
+    } catch (error) {
       handleApiError(error);
     }
   };
@@ -136,7 +136,7 @@ export default function UsersPage() {
       }
 
       await loadUsers();
-    } catch (error: unknown) {
+    } catch (error) {
       handleApiError(error);
     }
   };
@@ -146,13 +146,15 @@ export default function UsersPage() {
       await usersService.delete(id);
       toast.success("Usuario dado de baja correctamente");
       await loadUsers();
-    } catch (error: unknown) {
+    } catch (error) {
       handleApiError(error);
     }
   };
 
   if (!isClient || !session) {
-    return <div className="text-muted-foreground p-8 text-sm">Redirigiendo al inicio de sesión...</div>;
+    return (
+      <div className="text-muted-foreground p-8 text-sm">Redirigiendo al inicio de sesión...</div>
+    );
   }
 
   if (!isAdmin) {

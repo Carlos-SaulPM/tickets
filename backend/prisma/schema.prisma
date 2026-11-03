@@ -23,6 +23,7 @@ enum PrioridadTicket {
 enum EstadoTicket {
   Abierto
   En_proceso
+  En_revision
   Resuelto
   Cerrado
 }
@@ -38,6 +39,7 @@ enum TipoEventoHistorial {
   CAMBIO_ESTADO
   REASIGNACION
   CAMBIO_PRIORIDAD
+  PROPUESTA_SOLUCION
 }
 
 model Rol {
@@ -124,12 +126,13 @@ model Ticket {
 }
 
 model TicketMensaje {
-  id              String   @id @default(uuid()) @db.Uuid
-  ticket_id       String   @db.Uuid
-  usuario_id      String   @db.Uuid
-  mensaje         String
-  es_nota_interna Boolean  @default(false)
-  creado_en       DateTime @default(now()) @db.Timestamptz(6)
+  id                    String   @id @default(uuid()) @db.Uuid
+  ticket_id             String   @db.Uuid
+  usuario_id            String   @db.Uuid
+  mensaje               String
+  es_nota_interna       Boolean  @default(false)
+  es_propuesta_solucion Boolean  @default(false)
+  creado_en             DateTime @default(now()) @db.Timestamptz(6)
 
   ticket   Ticket           @relation(fields: [ticket_id], references: [id], onDelete: Cascade)
   usuario  Usuario          @relation(fields: [usuario_id], references: [id], onDelete: Restrict)

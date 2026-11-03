@@ -10,18 +10,8 @@ export const createUserSchema = z.object({
 
 export const updateUserSchema = z.object({
   nombre: z.string().trim().min(1, "El nombre no puede estar vacío").max(50).optional(),
-  apellido_paterno: z
-    .string()
-    .trim()
-    .min(1, "El apellido no puede estar vacío")
-    .max(50)
-    .optional(),
-  apellido_materno: z
-    .string()
-    .trim()
-    .min(1, "El apellido no puede estar vacío")
-    .max(50)
-    .optional(),
+  apellido_paterno: z.string().trim().min(1, "El apellido no puede estar vacío").max(50).optional(),
+  apellido_materno: z.string().trim().min(1, "El apellido no puede estar vacío").max(50).optional(),
   rol_id: z.string().min(1).optional(),
   estado: z.enum(["Activo", "Inactivo", "Baja"]).optional(),
 });

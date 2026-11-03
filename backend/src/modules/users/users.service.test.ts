@@ -143,6 +143,31 @@ describe("UsersService", () => {
     ).rejects.toMatchObject({ status: 400 });
   });
 
+  it("no permite que el Administrador se elimine a sí mismo", async () => {
+    await expect(
+      service.safeDelete({
+        id: user.id,
+        requestedRole: "Administrador",
+        requestedUserId: user.id,
+      })
+    ).rejects.toMatchObject({ status: 403 });
+
+    expect(repository.findById).not.toHaveBeenCalled();
+  });
+
+  it("no permite que el Administrador se dé de baja a sí mismo", async () => {
+    await expect(
+      service.editUser({
+        id: user.id,
+        data: { estado: "Baja" },
+        requestedRole: "Administrador",
+        requestedUserId: user.id,
+      })
+    ).rejects.toMatchObject({ status: 403 });
+
+    expect(repository.findById).not.toHaveBeenCalled();
+  });
+
   it("devuelve 404 al buscar un usuario inexistente", async () => {
     repository.findById.mockResolvedValue(null);
 

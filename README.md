@@ -27,23 +27,76 @@ Datos de seed en PostgreSQL. Se recrean con `pnpm prisma db seed`.
 
 - No hay registro público. Un administrador crea las cuentas.
 - Al crear un usuario, el backend genera una contraseña temporal y el frontend la muestra una sola vez.
+- Un administrador no puede eliminarse ni darse de baja a sí mismo.
 - El login devuelve un JWT. El frontend lo guarda y lo envía como `Authorization: Bearer`.
 - `Administrador` entra a `/users`; `Soporte` y `Usuario` entran a `/perfil`.
 - `/users` y `/roles` exigen JWT y rol `Administrador` en el backend.
 - El token expira según `JWT_EXPIRES_IN` (3600 s por defecto). No hay refresh: hay que volver a iniciar sesión.
 
+## Estado actual
+
+Implementado:
+
+- Login JWT y perfil.
+- CRUD de usuarios.
+- Catálogo de roles.
+- Áreas y categorías.
+- Tickets: crear, listar, ver, asignar y editar.
+- Mensajes, notas internas y propuestas de solución.
+- Aprobar/rechazar propuesta.
+- Historial y notificaciones in-app.
+- Seed de roles, áreas, categorías y usuarios.
+- Modelo Prisma completo.
+
+Pendiente:
+
+- Adjuntos.
+- Cierre automático por inactividad.
+- UI de tickets, notificaciones y catálogos.
+- Visibilidad de Soporte por área: el schema no relaciona usuarios con áreas; hoy Soporte ve tickets sin asignar o asignados a él.
+
+## Modelo de datos
+
+Tablas: `roles`, `usuarios`, `areas`, `categorias`, `tickets`, `ticket_mensajes`, `archivos_adjuntos`, `historial_tickets`, `notificaciones`.
+
+Estados de ticket:
+
+```text
+Abierto → En_proceso → En_revision → Resuelto → Cerrado
+```
+
+`En_revision` espera aprobación del usuario. `PROPUESTA_SOLUCION` registra la propuesta formal en el historial.
+
 ## API
 
-| Método   | Ruta                           | Acceso              |
-| -------- | ------------------------------ | ------------------- |
-| `POST`   | `/api/v1/autenticacion/login`  | Público             |
-| `GET`    | `/api/v1/autenticacion/perfil` | JWT                 |
-| `GET`    | `/api/v1/users`                | JWT + Administrador |
-| `POST`   | `/api/v1/users`                | JWT + Administrador |
-| `PATCH`  | `/api/v1/users/:id`            | JWT + Administrador |
-| `DELETE` | `/api/v1/users/:id`            | JWT + Administrador |
-| `GET`    | `/api/v1/roles`                | JWT + Administrador |
-| `GET`    | `/api/v1/holamundo`            | Público             |
+| Método   | Ruta                               | Acceso              |
+| -------- | ---------------------------------- | ------------------- |
+| `POST`   | `/api/v1/autenticacion/login`      | Público             |
+| `GET`    | `/api/v1/autenticacion/perfil`     | JWT                 |
+| `GET`    | `/api/v1/users`                    | JWT + Administrador |
+| `POST`   | `/api/v1/users`                    | JWT + Administrador |
+| `PATCH`  | `/api/v1/users/:id`                | JWT + Administrador |
+| `DELETE` | `/api/v1/users/:id`                | JWT + Administrador |
+| `GET`    | `/api/v1/roles`                    | JWT + Administrador |
+| `GET`    | `/api/v1/areas`                    | JWT                 |
+| `POST`   | `/api/v1/areas`                    | Administrador       |
+| `PATCH`  | `/api/v1/areas/:id`                | Administrador       |
+| `GET`    | `/api/v1/categorias`               | JWT                 |
+| `POST`   | `/api/v1/categorias`               | Administrador       |
+| `PATCH`  | `/api/v1/categorias/:id`           | Administrador       |
+| `GET`    | `/api/v1/tickets`                  | JWT                 |
+| `POST`   | `/api/v1/tickets`                  | JWT                 |
+| `GET`    | `/api/v1/tickets/:id`              | JWT                 |
+| `PATCH`  | `/api/v1/tickets/:id`              | Administrador       |
+| `POST`   | `/api/v1/tickets/:id/asignar`      | Admin o Soporte     |
+| `GET`    | `/api/v1/tickets/:id/mensajes`     | JWT                 |
+| `POST`   | `/api/v1/tickets/:id/mensajes`     | JWT                 |
+| `POST`   | `/api/v1/tickets/:id/aprobar`      | Creador             |
+| `POST`   | `/api/v1/tickets/:id/rechazar`     | Creador             |
+| `GET`    | `/api/v1/tickets/:id/historial`    | JWT                 |
+| `GET`    | `/api/v1/notificaciones`           | JWT                 |
+| `PATCH`  | `/api/v1/notificaciones/:id/leida` | JWT                 |
+| `GET`    | `/api/v1/holamundo`                | Público             |
 
 Login:
 
