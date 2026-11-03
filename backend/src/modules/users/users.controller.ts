@@ -10,7 +10,7 @@ const userService = new UsersService();
 export class usersController {
   static async create(req: Request, res: Response) {
     try {
-      const requestedRole = req.headers["x-user-role"] as any;
+      const requestedRole = req.usuario?.rol;
       const validation = createUserSchema.safeParse(req.body);
 
       if (!validation.success) {
@@ -45,7 +45,7 @@ export class usersController {
 
   static async update(req: Request, res: Response) {
     try {
-      const requestedRole = req.headers["x-user-role"] as any;
+      const requestedRole = req.usuario?.rol;
       const { id } = req.params;
 
       if (typeof id !== "string" || !id.trim()) {
@@ -90,7 +90,7 @@ export class usersController {
   static async delete(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const requestedRole = req.headers["x-user-role"] as any;
+      const requestedRole = req.usuario?.rol;
 
       if (typeof id !== "string" || !id.trim()) {
         return res.status(400).json({
@@ -119,7 +119,7 @@ export class usersController {
 
   static async getAll(req: Request, res: Response) {
     try {
-      const requestedRole = req.headers["x-user-role"] as any;
+      const requestedRole = req.usuario?.rol;
       const usuarios = await userService.getAll(requestedRole);
 
       return res.status(200).json({
@@ -142,7 +142,7 @@ export class usersController {
   static async getById(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const requestedRole = req.headers["x-user-role"] as any;
+      const requestedRole = req.usuario?.rol;
 
       if (typeof id !== "string" || !id.trim()) {
         return res.status(400).json({

@@ -1,54 +1,43 @@
-import { CreateUserInput, UpdateUserInput, User } from "@/types/user.types";
+import { apiFetch } from "@/lib/api";
+import type {
+  CreateUserInput,
+  CreateUserResponse,
+  UpdateUserInput,
+  User,
+} from "@/types/user.types";
 
-const API_BASE_URL = "http://localhost:3000/api/v1/users";
-
-// Header estático simulado para rol de Administrador
-const getHeaders = () => ({
-  "Content-Type": "application/json",
-  "x-user-role": "Admin",
-});
+const USERS_PATH = "/users";
 
 export const usersService = {
   async getAll(): Promise<User[]> {
-    const res = await fetch(API_BASE_URL, { headers: getHeaders() });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.message || "Error al obtener usuarios");
-    return json.data;
+    const response = await apiFetch<{ data: User[] }>(USERS_PATH);
+    return response.data;
   },
 
   async getById(id: string): Promise<User> {
-    const res = await fetch(`${API_BASE_URL}/${id}`, { headers: getHeaders() });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.message || "Error al obtener el usuario");
-    return json.data;
+    const response = await apiFetch<{ data: User }>(`${USERS_PATH}/${id}`);
+    return response.data;
   },
 
-  async create(data: CreateUserInput): Promise<void> {
-    const res = await fetch(API_BASE_URL, {
+  async create(data: CreateUserInput): Promise<CreateUserResponse> {
+    const response = await apiFetch<{ data: CreateUserResponse }>(USERS_PATH, {
       method: "POST",
-      headers: getHeaders(),
       body: JSON.stringify(data),
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.message || "Error al crear el usuario");
+
+    return response.data;
   },
 
   async update(id: string, data: UpdateUserInput): Promise<void> {
-    const res = await fetch(`${API_BASE_URL}/${id}`, {
+    await apiFetch(`${USERS_PATH}/${id}`, {
       method: "PATCH",
-      headers: getHeaders(),
       body: JSON.stringify(data),
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.message || "Error al actualizar el usuario");
   },
 
   async delete(id: string): Promise<void> {
-    const res = await fetch(`${API_BASE_URL}/${id}`, {
+    await apiFetch(`${USERS_PATH}/${id}`, {
       method: "DELETE",
-      headers: getHeaders(),
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.message || "Error al eliminar el usuario");
   },
 };

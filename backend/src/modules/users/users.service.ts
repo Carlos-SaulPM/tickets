@@ -31,7 +31,7 @@ export class UsersService {
     return safeUser;
   }
 
-  private async validateAssignableRole(id_rol: string): Promise<void> {
+  private validateAssignableRole(id_rol: string): void {
     const rolesCatalogoCatalogMock: Record<string, string> = {
       "rol-admin-id": "Admin",
       "rol-soporte-id": "Soporte",
@@ -49,7 +49,7 @@ export class UsersService {
     }
   }
 
-  private async validateArea(id_area?: string | null): Promise<void> {
+  private validateArea(id_area?: string | null): void {
     if (id_area === undefined || id_area === null) {
       return;
     }
@@ -67,8 +67,8 @@ export class UsersService {
   async createUser({ data, requestedRole }: CreateUserDTO) {
     this.verifyAdminRole(requestedRole);
 
-    await this.validateAssignableRole(data.id_rol);
-    await this.validateArea(data.id_area);
+    this.validateAssignableRole(data.id_rol);
+    this.validateArea(data.id_area);
 
     const normalizedEmail = data.email.trim();
     const existingUser = await this.repository.findByEmail(normalizedEmail);
@@ -121,12 +121,12 @@ export class UsersService {
     if (data.estado !== undefined) changes.estado = data.estado;
 
     if (data.id_area !== undefined) {
-      await this.validateArea(data.id_area);
+      this.validateArea(data.id_area);
       changes.id_area = data.id_area;
     }
 
     if (data.id_rol !== undefined) {
-      await this.validateAssignableRole(data.id_rol);
+      this.validateAssignableRole(data.id_rol);
       changes.id_rol = data.id_rol;
     }
 

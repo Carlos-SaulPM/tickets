@@ -22,6 +22,12 @@ export interface CreateUserInput {
   id_area?: string;
 }
 
+export interface CreateUserResponse {
+  usuario: string;
+  contrasena: string;
+  user: User;
+}
+
 export interface UpdateUserInput {
   nombre?: string;
   apellido_paterno?: string;

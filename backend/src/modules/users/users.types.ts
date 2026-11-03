@@ -19,7 +19,7 @@ export interface User {
 
 export interface CreateUserDTO {
   data: CreateUserInput;
-  requestedRole: UserRole;
+  requestedRole?: UserRole | undefined;
 }
 
 export interface CreateUserRepositoryDTO {
@@ -34,7 +34,7 @@ export interface CreateUserRepositoryDTO {
 export interface UpdateUserDTO {
   id: string;
   data: UpdateUserInput;
-  requestedRole: UserRole;
+  requestedRole?: UserRole | undefined;
 }
 
 export type UpdateUserRepositoryDTO = Partial<
@@ -43,5 +43,5 @@ export type UpdateUserRepositoryDTO = Partial<
 
 export interface DeleteUserDTO {
   id: string;
-  requestedRole: UserRole;
+  requestedRole?: UserRole | undefined;
 }

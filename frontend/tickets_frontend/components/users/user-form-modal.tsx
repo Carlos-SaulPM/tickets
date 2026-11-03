@@ -12,12 +12,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { createUserSchema } from "@/schemas/user.schema";
-import { CreateUserInput, User } from "@/types/user.types";
+import type { CreateUserInput, User } from "@/types/user.types";
 
 interface UserFormModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: any) => Promise<void>;
+  onSubmit: (data: CreateUserInput) => Promise<void>;
   initialData?: User | null;
 }
 
@@ -30,7 +30,7 @@ export function UserFormModal({ isOpen, onClose, onSubmit, initialData }: UserFo
     setValue,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm({
+  } = useForm<CreateUserInput>({
     resolver: zodResolver(createUserSchema),
   });
 
@@ -56,7 +56,7 @@ export function UserFormModal({ isOpen, onClose, onSubmit, initialData }: UserFo
     }
   }, [initialData, reset, isOpen]);
 
-  const handleFormSubmit = async (data: any) => {
+  const handleFormSubmit = async (data: CreateUserInput) => {
     await onSubmit(data);
     onClose();
   };

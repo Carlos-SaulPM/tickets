@@ -1,18 +1,22 @@
 import { Router } from "express";
 
+import { authMiddleware } from "@/middlewares/auth.middleware";
+
 import { usersController } from "./users.controller";
 
 const router = Router();
 
 // la ruta para probar sera /api/v1/users/
-router.post("/", usersController.create);
+router.use(authMiddleware);
 
-router.patch("/:id", usersController.update);
+router.post("/", usersController.create.bind(usersController));
 
-router.delete("/:id", usersController.delete);
+router.patch("/:id", usersController.update.bind(usersController));
 
-router.get("/", usersController.getAll);
+router.delete("/:id", usersController.delete.bind(usersController));
 
-router.get("/:id", usersController.getById);
+router.get("/", usersController.getAll.bind(usersController));
+
+router.get("/:id", usersController.getById.bind(usersController));
 
 export default router;

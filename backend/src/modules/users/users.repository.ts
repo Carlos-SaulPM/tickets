@@ -16,23 +16,23 @@ const usersMemoryDb: User[] = [
 ];
 
 export class UserRepository {
-  async findAll(): Promise<User[]> {
-    return usersMemoryDb;
+  findAll(): Promise<User[]> {
+    return Promise.resolve(usersMemoryDb);
   }
 
   // Busca utilizando el correo
 
-  async findByEmail(email: string): Promise<User | null> {
+  findByEmail(email: string): Promise<User | null> {
     const user = usersMemoryDb.find(user => user.email === email);
-    return user ?? null;
+    return Promise.resolve(user ?? null);
   }
-  async findById(id_usuario: string): Promise<User | null> {
+  findById(id_usuario: string): Promise<User | null> {
     const user = usersMemoryDb.find(user => user.id_usuario === id_usuario);
 
-    return user ?? null;
+    return Promise.resolve(user ?? null);
   }
 
-  async create(data: CreateUserRepositoryDTO, passwordHash: string): Promise<User> {
+  create(data: CreateUserRepositoryDTO, passwordHash: string): Promise<User> {
     const newUser: User = {
       id_usuario: Date.now().toString(),
       nombre: data.nombre,
@@ -50,17 +50,17 @@ export class UserRepository {
 
     usersMemoryDb.push(newUser);
 
-    return newUser;
+    return Promise.resolve(newUser);
   }
 
-  async update(id_usuario: string, data: UpdateUserRepositoryDTO): Promise<User | null> {
+  update(id_usuario: string, data: UpdateUserRepositoryDTO): Promise<User | null> {
     const index = usersMemoryDb.findIndex(user => user.id_usuario === id_usuario);
 
-    if (index === -1) return null;
+    if (index === -1) return Promise.resolve(null);
 
     const existingUser = usersMemoryDb[index];
 
-    if (!existingUser) return null;
+    if (!existingUser) return Promise.resolve(null);
 
     const updatedUser: User = {
       ...existingUser,
@@ -69,17 +69,17 @@ export class UserRepository {
 
     usersMemoryDb[index] = updatedUser;
 
-    return updatedUser;
+    return Promise.resolve(updatedUser);
   }
 
-  async softDelete(id_usuario: string): Promise<User | null> {
+  softDelete(id_usuario: string): Promise<User | null> {
     const index = usersMemoryDb.findIndex(user => user.id_usuario === id_usuario); // Busqueda por ID
 
-    if (index === -1) return null;
+    if (index === -1) return Promise.resolve(null);
 
     const existingUser = usersMemoryDb[index];
 
-    if (!existingUser) return null; // Comprobacion de existencia
+    if (!existingUser) return Promise.resolve(null); // Comprobacion de existencia
 
     const updatedUser: User = {
       ...existingUser,
@@ -88,6 +88,6 @@ export class UserRepository {
 
     usersMemoryDb[index] = updatedUser;
 
-    return updatedUser;
+    return Promise.resolve(updatedUser);
   }
 }

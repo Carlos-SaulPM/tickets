@@ -13,6 +13,8 @@ EXPOSE 3000
 CMD ["pnpm", "dev"]
 
 FROM deps AS build
+ARG NEXT_PUBLIC_API_URL=http://localhost:8080/api/v1
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 COPY . .
 RUN pnpm build
 

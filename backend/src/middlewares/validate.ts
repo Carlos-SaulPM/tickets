@@ -3,8 +3,7 @@ import type { NextFunction, Request, Response } from "express";
 import type { ValidationSchemas } from "@/types/validation";
 
 export const validate =
-  (schemas: ValidationSchemas) =>
-  (req: Request, _res: Response, next: NextFunction): void => {
+  (schemas: ValidationSchemas) => (req: Request, _res: Response, next: NextFunction) => {
     try {
       const validated: NonNullable<Request["validated"]> = {};
 
