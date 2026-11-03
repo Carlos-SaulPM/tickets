@@ -43,6 +43,7 @@ services:
     volumes:
       - ./backend:/app
       - /app/node_modules
+      - /app/src/generated
     depends_on:
       migrate:
         condition: service_completed_successfully

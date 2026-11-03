@@ -213,6 +213,7 @@ Para 80/443 usa un reverse proxy (nginx, Caddy, Traefik).
 - No edites archivos dentro de los contenedores; edita en el repo.
 - Esta versión reemplaza el esquema anterior. Si tienes el volumen `pgdata` viejo, ejecuta `docker compose down -v` una vez antes de arrancar.
 - `node_modules`, `src/generated` y `.next` son artefactos.
+- `src/generated` se genera dentro del contenedor en un volumen anónimo, así que no ensucia el repo. Para correr los tests de backend en el host, ejecuta antes `pnpm exec prisma generate`.
 - El token se guarda en `localStorage`. Es simple; para producción real conviene una cookie `httpOnly`.
 - Para reiniciar todo desde cero:
 
