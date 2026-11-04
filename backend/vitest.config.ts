@@ -8,6 +8,7 @@ export default defineConfig({
     },
   },
   test: {
+    include: ["src/test/**/*.test.ts"],
     environment: "node",
     fileParallelism: false,
     testTimeout: 180_000,

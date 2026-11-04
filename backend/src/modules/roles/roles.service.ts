@@ -1,16 +1,16 @@
 import { ApiError } from "@/utils/api-error";
 
-import { RoleRepository } from "./roles.repository";
+import { RolesRepository } from "./roles.repository";
 
 export class RolesService {
-  private repository = new RoleRepository();
+  private repository = new RolesRepository();
 
-  async getAll() {
-    return this.repository.findAll();
+  async listar() {
+    return this.repository.listar();
   }
 
-  async findById(id: string) {
-    const role = await this.repository.findById(id);
+  async buscarPorId(id: string) {
+    const role = await this.repository.buscarPorId(id);
 
     if (!role) {
       throw new ApiError(400, "El rol especificado no existe");

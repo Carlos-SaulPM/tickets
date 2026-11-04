@@ -1,7 +1,7 @@
 import { prisma } from "@/db/prisma";
 import type { Prisma } from "@/generated/prisma/client";
 
-import type { CreateAreaInput, UpdateAreaInput } from "./areas.schema";
+import type { ActualizarAreaInput, CrearAreaInput } from "./areas.schema";
 import type { Area } from "./areas.types";
 
 const areaSelect = {
@@ -11,21 +11,22 @@ const areaSelect = {
 } as const;
 
 export class AreaRepository {
-  findAll(): Promise<Area[]> {
+  listar(activo?: boolean): Promise<Area[]> {
     return prisma.area.findMany({
       select: areaSelect,
       orderBy: { nombre: "asc" },
+      ...(activo === undefined ? {} : { where: { activo } }),
     });
   }
 
-  findById(id: string): Promise<Area | null> {
+  buscarPorId(id: string): Promise<Area | null> {
     return prisma.area.findUnique({
       where: { id },
       select: areaSelect,
     });
   }
 
-  create(data: CreateAreaInput): Promise<Area> {
+  crear(data: CrearAreaInput): Promise<Area> {
     return prisma.area.create({
       data: {
         nombre: data.nombre,
@@ -35,7 +36,7 @@ export class AreaRepository {
     });
   }
 
-  async update(id: string, data: UpdateAreaInput): Promise<Area | null> {
+  async actualizar(id: string, data: ActualizarAreaInput): Promise<Area | null> {
     const updateData: Prisma.AreaUpdateManyMutationInput = {};
 
     if (data.nombre !== undefined) updateData.nombre = data.nombre;
@@ -48,6 +49,6 @@ export class AreaRepository {
 
     if (result.count === 0) return null;
 
-    return this.findById(id);
+    return this.buscarPorId(id);
   }
 }

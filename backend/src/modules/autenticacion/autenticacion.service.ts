@@ -3,15 +3,15 @@ import jwt from "jsonwebtoken";
 
 import { env } from "@/config/env";
 import { EstadoUsuario } from "@/generated/prisma/enums";
-import type { AuthUsuario, LoginDatosEntrada } from "@/types/autenticacion.types";
+import type { DatosLogin, UsuarioAutenticado } from "@/types/autenticacion.types";
 import { ApiError } from "@/utils/api-error";
 
 import { buscarUsuarioPorCorreo } from "./autenticacion.repository";
 
-const firmarToken = (usuario: AuthUsuario) =>
+const firmarToken = (usuario: UsuarioAutenticado) =>
   jwt.sign(usuario, env.JWT_SECRET, { expiresIn: env.JWT_EXPIRES_IN });
 
-export const iniciarSesion = async (datos: LoginDatosEntrada) => {
+export const iniciarSesion = async (datos: DatosLogin) => {
   const usuario = await buscarUsuarioPorCorreo(datos.correo_electronico);
 
   if (!usuario) {
@@ -28,7 +28,7 @@ export const iniciarSesion = async (datos: LoginDatosEntrada) => {
     throw new ApiError(403, "El usuario está inactivo o dado de baja");
   }
 
-  const usuarioPublico: AuthUsuario = {
+  const usuarioPublico: UsuarioAutenticado = {
     id: usuario.id,
     nombre: usuario.nombre,
     correo_electronico: usuario.correo_electronico,

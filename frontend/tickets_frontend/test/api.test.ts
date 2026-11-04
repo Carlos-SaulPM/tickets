@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ApiError, apiFetch } from "@/lib/api";
-import { saveSession } from "@/lib/session";
+import { guardarSesion } from "@/lib/sesion";
 
 const fetchMock = vi.fn();
 
@@ -19,7 +19,7 @@ beforeEach(() => {
 
 describe("apiFetch", () => {
   it("envía el token Bearer cuando hay sesión", async () => {
-    saveSession({
+    guardarSesion({
       token: "token-123",
       usuario: {
         id: "11111111-1111-4111-8111-111111111111",
@@ -39,7 +39,7 @@ describe("apiFetch", () => {
   });
 
   it("no envía token en login", async () => {
-    saveSession({
+    guardarSesion({
       token: "token-123",
       usuario: {
         id: "11111111-1111-4111-8111-111111111111",

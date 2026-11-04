@@ -1,23 +1,23 @@
-import type { UserRole } from "./user.types";
+import type { RolUsuario } from "./usuario.types";
 
 export interface LoginInput {
   correo_electronico: string;
   contrasena: string;
 }
 
-export interface AuthUser {
+export interface UsuarioAutenticado {
   id: string;
   nombre: string;
   correo_electronico: string;
-  rol: UserRole;
+  rol: RolUsuario;
 }
 
 export interface LoginResponse {
   token: string;
-  usuario: AuthUser;
+  usuario: UsuarioAutenticado;
 }
 
-export interface Session {
+export interface Sesion {
   token: string;
-  usuario: AuthUser;
+  usuario: UsuarioAutenticado;
 }

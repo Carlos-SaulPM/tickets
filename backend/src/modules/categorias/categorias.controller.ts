@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import { z } from "zod";
 
-import { createCategoriaSchema, updateCategoriaSchema } from "./categorias.schema";
+import { actualizarCategoriaSchema, crearCategoriaSchema } from "./categorias.schema";
 import { CategoriasService } from "./categorias.service";
 
 const categoriasService = new CategoriasService();
@@ -12,8 +12,8 @@ const getCategoriaId = (params: Request["params"]) => {
 };
 
 export class CategoriasController {
-  static async getAll(_req: Request, res: Response) {
-    const categorias = await categoriasService.getAll();
+  static async listar(_req: Request, res: Response) {
+    const categorias = await categoriasService.listar();
 
     return res.status(200).json({
       message: "Categorías obtenidas con éxito",
@@ -21,8 +21,8 @@ export class CategoriasController {
     });
   }
 
-  static async create(req: Request, res: Response) {
-    const validation = createCategoriaSchema.safeParse(req.body);
+  static async crear(req: Request, res: Response) {
+    const validation = crearCategoriaSchema.safeParse(req.body);
 
     if (!validation.success) {
       return res.status(400).json({
@@ -31,7 +31,7 @@ export class CategoriasController {
       });
     }
 
-    const categoria = await categoriasService.create(validation.data, req.usuario?.rol);
+    const categoria = await categoriasService.crear(validation.data, req.usuario?.rol);
 
     return res.status(201).json({
       message: "Categoría creada correctamente",
@@ -39,14 +39,14 @@ export class CategoriasController {
     });
   }
 
-  static async update(req: Request, res: Response) {
+  static async actualizar(req: Request, res: Response) {
     const id = getCategoriaId(req.params);
 
     if (!id) {
       return res.status(400).json({ error: "El id no es válido o no existe" });
     }
 
-    const validation = updateCategoriaSchema.safeParse(req.body);
+    const validation = actualizarCategoriaSchema.safeParse(req.body);
 
     if (!validation.success) {
       return res.status(400).json({
@@ -55,7 +55,7 @@ export class CategoriasController {
       });
     }
 
-    const categoria = await categoriasService.update(id, validation.data, req.usuario?.rol);
+    const categoria = await categoriasService.actualizar(id, validation.data, req.usuario?.rol);
 
     return res.status(200).json({
       message: "Categoría actualizada correctamente",

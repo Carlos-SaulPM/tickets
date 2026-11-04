@@ -19,7 +19,7 @@ vi.mock("@/services/auth.service", () => ({
 }));
 
 vi.mock("@/hooks/use-auth", () => ({
-  useAuth: () => ({ session: null, isClient: true }),
+  useAuth: () => ({ sesion: null, isClient: true }),
 }));
 
 beforeEach(() => {
@@ -28,7 +28,7 @@ beforeEach(() => {
 });
 
 describe("LoginPage", () => {
-  it("inicia sesión como Administrador y redirige a usuarios", async () => {
+  it("inicia sesión y redirige a tickets", async () => {
     const user = userEvent.setup();
     loginMock.mockResolvedValue({
       id: "11111111-1111-4111-8111-111111111111",
@@ -49,10 +49,10 @@ describe("LoginPage", () => {
         contrasena: "admin123",
       });
     });
-    expect(replaceMock).toHaveBeenCalledWith("/users");
+    expect(replaceMock).toHaveBeenCalledWith("/tickets");
   });
 
-  it("redirige a perfil cuando el rol no es Administrador", async () => {
+  it("redirige a tickets con cualquier rol", async () => {
     const user = userEvent.setup();
     loginMock.mockResolvedValue({
       id: "22222222-2222-4222-8222-222222222222",
@@ -67,7 +67,7 @@ describe("LoginPage", () => {
     await user.type(screen.getByLabelText("Contraseña"), "soporte123");
     await user.click(screen.getByRole("button", { name: "Ingresar" }));
 
-    await waitFor(() => expect(replaceMock).toHaveBeenCalledWith("/perfil"));
+    await waitFor(() => expect(replaceMock).toHaveBeenCalledWith("/tickets"));
   });
 
   it("muestra el error del backend", async () => {

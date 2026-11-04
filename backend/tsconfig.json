@@ -29,5 +29,12 @@
     "moduleDetection": "force",
     "skipLibCheck": true
   },
-  "include": ["src", "tsup.config.ts", "prisma.config.ts", "prisma/seed.ts", "vitest.config.ts"]
+  "include": [
+    "src",
+    "scripts",
+    "tsup.config.ts",
+    "prisma.config.ts",
+    "prisma/seed.ts",
+    "vitest.config.ts"
+  ]
 }

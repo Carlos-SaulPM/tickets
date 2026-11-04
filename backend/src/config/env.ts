@@ -8,6 +8,7 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1, "DATABASE_URL es requerida"),
   JWT_SECRET: z.string().min(32, "JWT_SECRET debe tener al menos 32 caracteres"),
   JWT_EXPIRES_IN: z.coerce.number().int().positive().default(3600),
+  UPLOADS_DIR: z.string().min(1).default("./uploads"),
 });
 
 const result = envSchema.safeParse(process.env);

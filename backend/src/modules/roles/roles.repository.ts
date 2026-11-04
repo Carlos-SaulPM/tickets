@@ -8,15 +8,15 @@ const roleSelect = {
   descripcion: true,
 } as const;
 
-export class RoleRepository {
-  findAll(): Promise<Role[]> {
+export class RolesRepository {
+  listar(): Promise<Role[]> {
     return prisma.rol.findMany({
       select: roleSelect,
       orderBy: { nombre: "asc" },
     });
   }
 
-  findById(id: string): Promise<Role | null> {
+  buscarPorId(id: string): Promise<Role | null> {
     return prisma.rol.findUnique({
       where: { id },
       select: roleSelect,

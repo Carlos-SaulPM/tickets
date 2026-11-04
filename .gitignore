@@ -3,7 +3,16 @@ node_modules/
 package-lock.json
 npm-shrinkwrap.json
 yarn.lock
-opencode.json
-.agents
-skills-lock.json
+uploads/
+
+# Archivos de asistentes de IA: locales, no se versionan.
 AGENTS.md
+CLAUDE.md
+.agents/
+.opencode/
+.cursor/
+.cursorrules
+.windsurf/
+opencode.json
+skills-lock.json
+especificaciones_y_reglas_del_proyecto.md

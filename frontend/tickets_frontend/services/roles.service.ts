@@ -1,9 +1,9 @@
 import { apiFetch } from "@/lib/api";
-import type { Role } from "@/types/role.types";
+import type { Rol } from "@/types/rol.types";
 
 export const rolesService = {
-  async getAll(): Promise<Role[]> {
-    const response = await apiFetch<{ data: Role[] }>("/roles");
+  async listar(): Promise<Rol[]> {
+    const response = await apiFetch<{ data: Rol[] }>("/roles");
     return response.data;
   },
 };

@@ -8,7 +8,7 @@ const router = Router();
 
 router.use(authMiddleware);
 
-router.get("/", TicketsController.getNotificaciones.bind(TicketsController));
+router.get("/", TicketsController.obtenerNotificaciones.bind(TicketsController));
 router.patch("/:id/leida", TicketsController.marcarNotificacionLeida.bind(TicketsController));
 
 export default router;

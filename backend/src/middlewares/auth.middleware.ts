@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 
 import { env } from "@/config/env";
 import type { NombreRol } from "@/generated/prisma/enums";
-import type { AuthUsuario } from "@/types/autenticacion.types";
+import type { UsuarioAutenticado } from "@/types/autenticacion.types";
 import { ApiError } from "@/utils/api-error";
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -12,7 +12,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const isNombreRol = (value: unknown): value is NombreRol =>
   value === "Administrador" || value === "Soporte" || value === "Usuario";
 
-const isAuthUsuario = (value: unknown): value is AuthUsuario => {
+const isUsuarioAutenticado = (value: unknown): value is UsuarioAutenticado => {
   if (!isRecord(value)) return false;
 
   return (
@@ -36,7 +36,7 @@ export const authMiddleware = (req: Request, _res: Response, next: NextFunction)
   try {
     const payload: unknown = jwt.verify(token, env.JWT_SECRET);
 
-    if (!isAuthUsuario(payload)) {
+    if (!isUsuarioAutenticado(payload)) {
       next(new ApiError(401, "No autorizado"));
       return;
     }

@@ -122,6 +122,7 @@ model Ticket {
   @@index([asignado_a_id])
   @@index([estado])
   @@index([prioridad])
+  @@index([creado_en, id])
   @@map("tickets")
 }
 
@@ -136,7 +137,7 @@ model TicketMensaje {
 
   ticket   Ticket           @relation(fields: [ticket_id], references: [id], onDelete: Cascade)
   usuario  Usuario          @relation(fields: [usuario_id], references: [id], onDelete: Restrict)
-  archivos ArchivoAdjunto[]
+  adjuntos ArchivoAdjunto[]
 
   @@index([ticket_id])
   @@index([usuario_id])
