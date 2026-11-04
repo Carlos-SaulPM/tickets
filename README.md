@@ -9,7 +9,7 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-- Frontend: <http://localhost:3001/login>
+- Frontend: <http://localhost:3001> (redirige a `/tickets` o a `/login` según la sesión)
 - API: <http://localhost:3000/api/v1>
 - Prueba API: <http://localhost:3000/api/v1/holamundo>
 
@@ -31,6 +31,8 @@ El seed también crea el ticket `#TK-DEMO` con tres mensajes y cinco imágenes: 
 - Al crear un usuario, el backend genera una contraseña temporal y el frontend la muestra una sola vez.
 - Un administrador no puede eliminarse ni darse de baja a sí mismo.
 - El login devuelve un JWT. El frontend lo guarda y lo envía como `Authorization: Bearer`.
+- La raíz `/` no tiene pantalla propia: manda a `/tickets` si hay sesión y a `/login` si no.
+- `/login` también redirige a `/tickets` cuando ya hay sesión.
 - `Administrador` entra a `/users`; `Soporte` y `Usuario` entran a `/perfil`.
 - `/users` y `/roles` exigen JWT y rol `Administrador` en el backend.
 - El token expira según `JWT_EXPIRES_IN` (3600 s por defecto). No hay refresh: hay que volver a iniciar sesión.
@@ -207,6 +209,7 @@ Los filtros se combinan con la visibilidad del rol, así que un Usuario nunca ve
 │       ├── test/integration/
 │       └── routes/
 └── frontend/tickets_frontend/
+    ├── app/page.tsx (redirige a /tickets o /login)
     ├── app/tickets/
     ├── app/tickets/nuevo/
     ├── app/tickets/[id]/
@@ -297,6 +300,7 @@ Para 80/443 usa un reverse proxy (nginx, Caddy, Traefik).
 
 ## Notas
 
+- El nombre visible del sistema y su descripción viven en `frontend/tickets_frontend/lib/marca.ts`. Cámbialos por los del cliente y se actualizan el login, la barra de navegación y el título de la pestaña.
 - No edites archivos dentro de los contenedores; edita en el repo.
 - Esta versión reemplaza el esquema anterior. Si tienes el volumen `pgdata` viejo, ejecuta `docker compose down -v` una vez antes de arrancar.
 - `node_modules`, `src/generated` y `.next` son artefactos. Las imágenes subidas viven en el volumen `uploads`, no en el repo.

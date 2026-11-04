@@ -6,13 +6,14 @@ import { Geist } from "next/font/google";
 
 import { BotonNuevoTicket } from "@/components/tickets/boton-nuevo-ticket";
 import { Toaster } from "@/components/ui/sonner";
+import { DESCRIPCION_SISTEMA, NOMBRE_SISTEMA } from "@/lib/marca";
 import { cn } from "@/lib/utils";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
-  title: "Tickets",
-  description: "Front End de los tickets",
+  title: NOMBRE_SISTEMA,
+  description: DESCRIPCION_SISTEMA,
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

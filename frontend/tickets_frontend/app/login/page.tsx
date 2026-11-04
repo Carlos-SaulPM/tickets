@@ -1,116 +1,31 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { useState, type FormEvent } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { FormularioLogin } from "@/components/auth/formulario-login";
+import { MarcaLogin } from "@/components/auth/marca-login";
+import { NOMBRE_SISTEMA } from "@/lib/marca";
+import { obtenerSesionServidor } from "@/lib/server/sesion";
 
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useAuth } from "@/hooks/use-auth";
-import { ApiError } from "@/lib/api";
-import { authService } from "@/services/auth.service";
+export const instant = false;
 
-export default function LoginPage() {
-  const router = useRouter();
-  const { sesion } = useAuth();
+export default async function LoginPage() {
+  const sesion = await obtenerSesionServidor();
 
-  const [correoElectronico, setCorreoElectronico] = useState("");
-  const [contrasena, setContrasena] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleSubmit = async (event: FormEvent) => {
-    event.preventDefault();
-    setError(null);
-    setIsSubmitting(true);
-
-    try {
-      await authService.login({
-        correo_electronico: correoElectronico.trim(),
-        contrasena,
-      });
-      router.replace("/tickets");
-      router.refresh();
-    } catch (loginError) {
-      setError(loginError instanceof ApiError ? loginError.message : "No se pudo iniciar sesión");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  if (sesion) {
+    redirect("/tickets");
+  }
 
   return (
-    <div id="contenido" className="bg-muted/30 flex min-h-screen items-center justify-center px-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>Iniciar sesión</CardTitle>
-          <CardDescription>Accede con la cuenta que te asignó un administrador.</CardDescription>
-        </CardHeader>
-        <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4">
-            {error && (
-              <p role="alert" className="text-destructive text-sm">
-                {error}
-              </p>
-            )}
+    <main id="contenido" className="bg-background grid min-h-screen lg:grid-cols-[1.05fr_1fr]">
+      <h1 className="sr-only">Iniciar sesión en {NOMBRE_SISTEMA}</h1>
 
-            <div className="space-y-2">
-              <Label htmlFor="correo_electronico">Correo electrónico</Label>
-              <Input
-                id="correo_electronico"
-                type="email"
-                autoComplete="username"
-                placeholder="usuario@ejemplo.com"
-                value={correoElectronico}
-                onChange={event => setCorreoElectronico(event.target.value)}
-                required
-              />
-            </div>
+      <MarcaLogin variante="panel" />
 
-            <div className="space-y-2">
-              <Label htmlFor="contrasena">Contraseña</Label>
-              <Input
-                id="contrasena"
-                type="password"
-                autoComplete="current-password"
-                placeholder="Tu contraseña"
-                value={contrasena}
-                onChange={event => setContrasena(event.target.value)}
-                required
-              />
-            </div>
-
-            {sesion && (
-              <p className="text-muted-foreground text-sm">
-                Ya tienes una sesión activa.{" "}
-                <Link
-                  href={sesion.usuario.rol === "Administrador" ? "/users" : "/perfil"}
-                  className="text-foreground underline underline-offset-4"
-                >
-                  Continuar
-                </Link>
-              </p>
-            )}
-          </CardContent>
-
-          <CardFooter className="mt-4 flex flex-col gap-2">
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? "Ingresando..." : "Ingresar"}
-            </Button>
-            <p className="text-muted-foreground text-center text-xs">
-              Las cuentas son creadas por un administrador.
-            </p>
-          </CardFooter>
-        </form>
-      </Card>
-    </div>
+      <section className="flex items-center justify-center px-4 py-10 sm:px-8">
+        <div className="w-full max-w-sm space-y-6">
+          <MarcaLogin variante="compacta" />
+          <FormularioLogin />
+        </div>
+      </section>
+    </main>
   );
 }

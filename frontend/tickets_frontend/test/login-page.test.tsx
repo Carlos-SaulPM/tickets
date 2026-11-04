@@ -2,7 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import LoginPage from "@/app/login/page";
+import { FormularioLogin } from "@/components/auth/formulario-login";
 import { ApiError } from "@/lib/api";
 
 const { loginMock, replaceMock } = vi.hoisted(() => ({
@@ -27,7 +27,7 @@ beforeEach(() => {
   replaceMock.mockReset();
 });
 
-describe("LoginPage", () => {
+describe("FormularioLogin", () => {
   it("inicia sesión y redirige a tickets", async () => {
     const user = userEvent.setup();
     loginMock.mockResolvedValue({
@@ -37,7 +37,7 @@ describe("LoginPage", () => {
       rol: "Administrador",
     });
 
-    render(<LoginPage />);
+    render(<FormularioLogin />);
 
     await user.type(screen.getByLabelText("Correo electrónico"), "admin@example.com");
     await user.type(screen.getByLabelText("Contraseña"), "admin123");
@@ -61,7 +61,7 @@ describe("LoginPage", () => {
       rol: "Soporte",
     });
 
-    render(<LoginPage />);
+    render(<FormularioLogin />);
 
     await user.type(screen.getByLabelText("Correo electrónico"), "soporte@example.com");
     await user.type(screen.getByLabelText("Contraseña"), "soporte123");
@@ -74,7 +74,7 @@ describe("LoginPage", () => {
     const user = userEvent.setup();
     loginMock.mockRejectedValue(new ApiError("Credenciales inválidas", 401));
 
-    render(<LoginPage />);
+    render(<FormularioLogin />);
 
     await user.type(screen.getByLabelText("Correo electrónico"), "admin@example.com");
     await user.type(screen.getByLabelText("Contraseña"), "incorrecta");

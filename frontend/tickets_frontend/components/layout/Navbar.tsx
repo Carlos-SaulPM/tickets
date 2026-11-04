@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
+import { NOMBRE_SISTEMA } from "@/lib/marca";
 import { authService } from "@/services/auth.service";
 
 const linkClass = (active: boolean) =>
@@ -27,8 +28,8 @@ export function Navbar() {
     <header className="bg-card/95 supports-[backdrop-filter]:bg-card/80 border-b backdrop-blur">
       <div className="container mx-auto flex h-16 items-center justify-between gap-4 px-4">
         <div className="flex items-center gap-6">
-          <Link href="/" className="text-lg font-bold tracking-tight">
-            Sistema de Tickets
+          <Link href="/tickets" className="text-lg font-bold tracking-tight">
+            {NOMBRE_SISTEMA}
           </Link>
           <nav className="flex items-center gap-4">
             {sesion && (
