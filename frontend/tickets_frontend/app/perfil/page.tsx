@@ -9,25 +9,25 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
 import { ApiError } from "@/lib/api";
-import { getSession } from "@/lib/session";
+import { obtenerSesion } from "@/lib/sesion";
 import { authService } from "@/services/auth.service";
-import type { AuthUser } from "@/types/auth.types";
+import type { UsuarioAutenticado } from "@/types/auth.types";
 
 export default function PerfilPage() {
   const router = useRouter();
-  const { session, isClient } = useAuth();
+  const { sesion, isClient } = useAuth();
 
-  const [usuario, setUsuario] = useState<AuthUser | null>(null);
+  const [usuario, setUsuario] = useState<UsuarioAutenticado | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isClient && !getSession()) {
+    if (isClient && !obtenerSesion()) {
       router.replace("/login");
     }
-  }, [isClient, session, router]);
+  }, [isClient, sesion, router]);
 
   useEffect(() => {
-    if (!isClient || !session) return;
+    if (!isClient || !sesion) return;
 
     let cancelled = false;
 
@@ -53,15 +53,15 @@ export default function PerfilPage() {
     return () => {
       cancelled = true;
     };
-  }, [isClient, session, router]);
+  }, [isClient, sesion, router]);
 
-  if (!isClient || !session) {
+  if (!isClient || !sesion) {
     return (
       <div className="text-muted-foreground p-8 text-sm">Redirigiendo al inicio de sesión...</div>
     );
   }
 
-  const perfil = usuario ?? session.usuario;
+  const perfil = usuario ?? sesion.usuario;
 
   const handleLogout = () => {
     authService.logout();
@@ -71,7 +71,7 @@ export default function PerfilPage() {
   return (
     <div className="bg-background min-h-screen">
       <Navbar />
-      <main className="container mx-auto max-w-2xl px-4 py-8">
+      <main id="contenido" className="container mx-auto max-w-2xl px-4 py-8">
         <Card>
           <CardHeader>
             <CardTitle>Mi perfil</CardTitle>

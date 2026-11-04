@@ -42,6 +42,13 @@ export interface Ticket {
   fecha_cierre: Date | null;
 }
 
+export interface Adjunto {
+  id: string;
+  nombre_original: string;
+  tipo_mime: string | null;
+  ruta_url: string;
+}
+
 export interface TicketMensaje {
   id: string;
   ticket_id: string;
@@ -50,9 +57,10 @@ export interface TicketMensaje {
   es_propuesta_solucion: boolean;
   creado_en: Date;
   usuario: TicketUsuarioResumen;
+  adjuntos: Adjunto[];
 }
 
-export interface CreateTicketRepositoryDTO {
+export interface CrearTicketRepositoryDTO {
   codigo: string;
   asunto: string;
   descripcion: string;
@@ -62,7 +70,7 @@ export interface CreateTicketRepositoryDTO {
   usuario_creador_id: string;
 }
 
-export interface UpdateTicketRepositoryDTO {
+export interface ActualizarTicketRepositoryDTO {
   asunto?: string | undefined;
   descripcion?: string | undefined;
   prioridad?: PrioridadTicket | undefined;
@@ -70,7 +78,7 @@ export interface UpdateTicketRepositoryDTO {
   area_id?: string | null | undefined;
 }
 
-export interface CreateMensajeRepositoryDTO {
+export interface CrearMensajeRepositoryDTO {
   ticket_id: string;
   usuario_id: string;
   mensaje: string;
@@ -78,7 +86,17 @@ export interface CreateMensajeRepositoryDTO {
   es_propuesta_solucion: boolean;
 }
 
-export interface CreateHistorialRepositoryDTO {
+export interface CrearAdjuntoRepositoryDTO {
+  id: string;
+  ticket_id: string;
+  nombre_original: string;
+  nombre_almacenado: string;
+  tipo_mime: string;
+  ruta_url: string;
+  subido_por_id: string;
+}
+
+export interface CrearHistorialRepositoryDTO {
   ticket_id: string;
   usuario_id: string;
   tipo_evento: TipoEventoHistorial;
@@ -87,7 +105,7 @@ export interface CreateHistorialRepositoryDTO {
   detalle: string | null;
 }
 
-export interface CreateNotificacionRepositoryDTO {
+export interface CrearNotificacionRepositoryDTO {
   usuario_id: string;
   ticket_id: string | null;
   mensaje: string;
@@ -109,4 +127,13 @@ export interface Notificacion {
   mensaje: string;
   leida: boolean;
   creado_en: Date;
+}
+
+export interface AdjuntoConTicket extends Adjunto {
+  nombre_almacenado: string;
+  ticket: {
+    id: string;
+    usuario_creador_id: string;
+    asignado_a_id: string | null;
+  };
 }

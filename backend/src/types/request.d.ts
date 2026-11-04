@@ -1,4 +1,4 @@
-import type { AuthUsuario } from "@/types/autenticacion.types";
+import type { UsuarioAutenticado } from "@/types/autenticacion.types";
 
 declare global {
   namespace Express {
@@ -8,7 +8,7 @@ declare global {
         query?: unknown;
         params?: unknown;
       };
-      usuario?: AuthUsuario;
+      usuario?: UsuarioAutenticado;
     }
   }
 }

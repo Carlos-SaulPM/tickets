@@ -6,30 +6,48 @@ import {
   TipoEventoHistorial,
 } from "@/generated/prisma/enums";
 import { correoService } from "@/services/correo/correo.service";
-import type { AuthUsuario } from "@/types/autenticacion.types";
+import type { UsuarioAutenticado } from "@/types/autenticacion.types";
 import { ApiError } from "@/utils/api-error";
+import { sanitizarHtml } from "@/utils/sanitizar-html";
 
+import { puedeVerTicket } from "./tickets.permissions";
 import { TicketRepository } from "./tickets.repository";
-import type { CreateMensajeInput, CreateTicketInput, UpdateTicketInput } from "./tickets.schema";
+import type {
+  ActualizarTicketInput,
+  CrearMensajeInput,
+  CrearTicketInput,
+  ListarTicketsQuery,
+} from "./tickets.schema";
 import type { Ticket, TicketMensaje, TicketUsuarioResumen } from "./tickets.types";
 
 const esStaff = (rol: NombreRol) => rol === NombreRol.Administrador || rol === NombreRol.Soporte;
 
+const ESTADOS_CERRABLES: readonly EstadoTicket[] = [
+  EstadoTicket.Abierto,
+  EstadoTicket.En_proceso,
+  EstadoTicket.En_revision,
+  EstadoTicket.Resuelto,
+];
+
 export class TicketsService {
   constructor(private readonly repository: TicketRepository = new TicketRepository()) {}
 
-  private canView(ticket: Ticket, usuario: AuthUsuario): boolean {
+  private canView(ticket: Ticket, usuario: UsuarioAutenticado): boolean {
+    return puedeVerTicket(ticket, usuario);
+  }
+
+  private puedeCerrar(ticket: Ticket, usuario: UsuarioAutenticado): boolean {
     if (usuario.rol === NombreRol.Administrador) return true;
 
     if (usuario.rol === NombreRol.Soporte) {
-      return ticket.asignado_a === null || ticket.asignado_a.id === usuario.id;
+      return ticket.asignado_a?.id === usuario.id;
     }
 
-    return ticket.usuario_creador.id === usuario.id;
+    return false;
   }
 
-  private async getTicketPermitido(id: string, usuario: AuthUsuario): Promise<Ticket> {
-    const ticket = await this.repository.findById(id);
+  private async getTicketPermitido(id: string, usuario: UsuarioAutenticado): Promise<Ticket> {
+    const ticket = await this.repository.buscarPorId(id);
 
     if (!ticket) {
       throw new ApiError(404, "No se ha encontrado el ticket");
@@ -43,7 +61,7 @@ export class TicketsService {
   }
 
   private async validarCategoria(categoria_id: string): Promise<void> {
-    const categoria = await this.repository.findCategoriaById(categoria_id);
+    const categoria = await this.repository.buscarCategoriaPorId(categoria_id);
 
     if (!categoria) {
       throw new ApiError(400, "La categoría especificada no existe");
@@ -53,19 +71,22 @@ export class TicketsService {
   private async validarArea(area_id: string | null): Promise<void> {
     if (!area_id) return;
 
-    const area = await this.repository.findAreaById(area_id);
+    const area = await this.repository.buscarAreaPorId(area_id);
 
     if (!area || !area.activo) {
       throw new ApiError(400, "El área especificada no existe o está inactiva");
     }
   }
 
-  private async generarTicket(data: CreateTicketInput, usuario: AuthUsuario): Promise<Ticket> {
+  private async generarTicket(
+    data: CrearTicketInput,
+    usuario: UsuarioAutenticado
+  ): Promise<Ticket> {
     for (let intento = 0; intento < 5; intento += 1) {
-      const codigo = `#TK-${String((await this.repository.count()) + 1 + intento).padStart(3, "0")}`;
+      const codigo = `#TK-${String((await this.repository.contar()) + 1 + intento).padStart(3, "0")}`;
 
       try {
-        return await this.repository.create({
+        return await this.repository.crear({
           codigo,
           asunto: data.asunto,
           descripcion: data.descripcion,
@@ -92,7 +113,7 @@ export class TicketsService {
     mensaje: string,
     plantilla: "TICKET_CREADO" | "SOLUCION_PROPUESTA" | "ESTADO_CAMBIADO"
   ): Promise<void> {
-    await this.repository.createNotificacion({
+    await this.repository.crearNotificacion({
       usuario_id: destinatario.id,
       ticket_id: ticket.id,
       mensaje,
@@ -106,31 +127,64 @@ export class TicketsService {
     });
   }
 
-  async getAll(usuario: AuthUsuario): Promise<Ticket[]> {
-    if (usuario.rol === NombreRol.Administrador) {
-      return this.repository.findAll({});
-    }
+  private construirWhere(
+    usuario: UsuarioAutenticado,
+    filtros: ListarTicketsQuery
+  ): Prisma.TicketWhereInput {
+    const visibilidad: Prisma.TicketWhereInput =
+      usuario.rol === NombreRol.Administrador
+        ? {}
+        : usuario.rol === NombreRol.Soporte
+          ? { OR: [{ asignado_a_id: usuario.id }, { asignado_a_id: null }] }
+          : { usuario_creador_id: usuario.id };
 
-    if (usuario.rol === NombreRol.Soporte) {
-      return this.repository.findAll({
-        OR: [{ asignado_a_id: usuario.id }, { asignado_a_id: null }],
+    const condiciones: Prisma.TicketWhereInput[] = [visibilidad];
+
+    if (filtros.estado) condiciones.push({ estado: filtros.estado });
+    if (filtros.prioridad) condiciones.push({ prioridad: filtros.prioridad });
+    if (filtros.area_id) condiciones.push({ area_id: filtros.area_id });
+    if (filtros.categoria_id) condiciones.push({ categoria_id: filtros.categoria_id });
+
+    if (filtros.buscar) {
+      condiciones.push({
+        OR: [
+          { codigo: { contains: filtros.buscar, mode: "insensitive" } },
+          { asunto: { contains: filtros.buscar, mode: "insensitive" } },
+          { descripcion: { contains: filtros.buscar, mode: "insensitive" } },
+        ],
       });
     }
 
-    return this.repository.findAll({ usuario_creador_id: usuario.id });
+    return { AND: condiciones };
   }
 
-  async getById(id: string, usuario: AuthUsuario): Promise<Ticket> {
+  async listar(usuario: UsuarioAutenticado, filtros: ListarTicketsQuery) {
+    const where = this.construirWhere(usuario, filtros);
+    const skip = (filtros.pagina - 1) * filtros.limite;
+    const { total, tickets } = await this.repository.listarPaginado(where, skip, filtros.limite);
+
+    return {
+      tickets,
+      meta: {
+        pagina: filtros.pagina,
+        limite: filtros.limite,
+        total,
+        total_paginas: Math.ceil(total / filtros.limite),
+      },
+    };
+  }
+
+  async obtenerPorId(id: string, usuario: UsuarioAutenticado): Promise<Ticket> {
     return this.getTicketPermitido(id, usuario);
   }
 
-  async create(data: CreateTicketInput, usuario: AuthUsuario): Promise<Ticket> {
+  async crear(data: CrearTicketInput, usuario: UsuarioAutenticado): Promise<Ticket> {
     await this.validarCategoria(data.categoria_id);
     await this.validarArea(data.area_id ?? null);
 
     const ticket = await this.generarTicket(data, usuario);
 
-    await this.repository.createHistorial({
+    await this.repository.crearHistorial({
       ticket_id: ticket.id,
       usuario_id: usuario.id,
       tipo_evento: TipoEventoHistorial.CREACION,
@@ -144,7 +198,11 @@ export class TicketsService {
     return ticket;
   }
 
-  async update(id: string, data: UpdateTicketInput, usuario: AuthUsuario): Promise<Ticket> {
+  async actualizar(
+    id: string,
+    data: ActualizarTicketInput,
+    usuario: UsuarioAutenticado
+  ): Promise<Ticket> {
     if (usuario.rol !== NombreRol.Administrador) {
       throw new ApiError(403, "Acceso denegado: Solo permitido para administrador");
     }
@@ -154,14 +212,14 @@ export class TicketsService {
     if (data.categoria_id !== undefined) await this.validarCategoria(data.categoria_id);
     if (data.area_id !== undefined) await this.validarArea(data.area_id);
 
-    const updated = await this.repository.update(id, data);
+    const updated = await this.repository.actualizar(id, data);
 
     if (!updated) {
       throw new ApiError(404, "No se ha encontrado el ticket");
     }
 
     if (data.prioridad !== undefined && data.prioridad !== ticket.prioridad) {
-      await this.repository.createHistorial({
+      await this.repository.crearHistorial({
         ticket_id: ticket.id,
         usuario_id: usuario.id,
         tipo_evento: TipoEventoHistorial.CAMBIO_PRIORIDAD,
@@ -174,9 +232,9 @@ export class TicketsService {
     return updated;
   }
 
-  async assign(id: string, asignado_a_id: string, usuario: AuthUsuario): Promise<Ticket> {
+  async asignar(id: string, asignado_a_id: string, usuario: UsuarioAutenticado): Promise<Ticket> {
     const ticket = await this.getTicketPermitido(id, usuario);
-    const destino = await this.repository.findUsuarioById(asignado_a_id);
+    const destino = await this.repository.buscarUsuarioPorId(asignado_a_id);
 
     if (!destino) {
       throw new ApiError(404, "No se ha encontrado el usuario a asignar");
@@ -203,9 +261,9 @@ export class TicketsService {
     }
 
     const estado = ticket.estado === EstadoTicket.Abierto ? EstadoTicket.En_proceso : ticket.estado;
-    const updated = await this.repository.assign(id, asignado_a_id, estado);
+    const updated = await this.repository.asignar(id, asignado_a_id, estado);
 
-    await this.repository.createHistorial({
+    await this.repository.crearHistorial({
       ticket_id: ticket.id,
       usuario_id: usuario.id,
       tipo_evento: TipoEventoHistorial.REASIGNACION,
@@ -219,17 +277,76 @@ export class TicketsService {
     return updated;
   }
 
-  async getMensajes(id: string, usuario: AuthUsuario): Promise<TicketMensaje[]> {
-    await this.getTicketPermitido(id, usuario);
-    return this.repository.findMensajes(id, esStaff(usuario.rol));
+  async cambiarEstado(
+    id: string,
+    estado: EstadoTicket,
+    usuario: UsuarioAutenticado
+  ): Promise<Ticket> {
+    const ticket = await this.getTicketPermitido(id, usuario);
+
+    if (!this.puedeCerrar(ticket, usuario)) {
+      throw new ApiError(403, "No tienes permiso para cambiar el estado del ticket");
+    }
+
+    if (estado !== EstadoTicket.Cerrado) {
+      throw new ApiError(
+        400,
+        "Solo se puede cerrar el ticket desde este endpoint; el resto de transiciones tiene su propia ruta"
+      );
+    }
+
+    if (!ESTADOS_CERRABLES.includes(ticket.estado)) {
+      throw new ApiError(400, "El ticket ya está cerrado");
+    }
+
+    const updated = await this.repository.updateEstado(id, EstadoTicket.Cerrado, new Date());
+
+    await this.repository.crearHistorial({
+      ticket_id: ticket.id,
+      usuario_id: usuario.id,
+      tipo_evento: TipoEventoHistorial.CAMBIO_ESTADO,
+      estado_anterior: ticket.estado,
+      estado_nuevo: updated.estado,
+      detalle: "Ticket cerrado",
+    });
+
+    if (updated.usuario_creador.id !== usuario.id) {
+      await this.notificar(
+        updated.usuario_creador,
+        updated,
+        "Tu ticket fue cerrado",
+        "ESTADO_CAMBIADO"
+      );
+    }
+
+    if (updated.asignado_a && updated.asignado_a.id !== usuario.id) {
+      await this.notificar(
+        updated.asignado_a,
+        updated,
+        "El ticket que tenías asignado fue cerrado",
+        "ESTADO_CAMBIADO"
+      );
+    }
+
+    return updated;
   }
 
-  async addMensaje(
+  async obtenerMensajes(id: string, usuario: UsuarioAutenticado): Promise<TicketMensaje[]> {
+    await this.getTicketPermitido(id, usuario);
+    return this.repository.buscarMensajes(id, esStaff(usuario.rol));
+  }
+
+  async agregarMensaje(
     id: string,
-    data: CreateMensajeInput,
-    usuario: AuthUsuario
+    data: CrearMensajeInput,
+    usuario: UsuarioAutenticado
   ): Promise<TicketMensaje> {
     const ticket = await this.getTicketPermitido(id, usuario);
+
+    if (usuario.rol === NombreRol.Soporte && ticket.asignado_a?.id !== usuario.id) {
+      throw new ApiError(403, "Toma el ticket antes de responder");
+    }
+
     const esNotaInterna = data.es_nota_interna ?? false;
     const esPropuesta = data.es_propuesta_solucion ?? false;
 
@@ -251,20 +368,41 @@ export class TicketsService {
       }
     }
 
-    const mensaje = await this.repository.createMensaje({
+    const adjuntoIds = data.adjunto_ids ?? [];
+
+    if (adjuntoIds.length > 0) {
+      const disponibles = await this.repository.contarAdjuntosDisponibles(
+        ticket.id,
+        usuario.id,
+        adjuntoIds
+      );
+
+      if (disponibles !== adjuntoIds.length) {
+        throw new ApiError(400, "Alguno de los adjuntos no está disponible para este ticket");
+      }
+    }
+
+    const mensaje = await this.repository.crearMensaje({
       ticket_id: ticket.id,
       usuario_id: usuario.id,
-      mensaje: data.mensaje,
+      mensaje: sanitizarHtml(data.mensaje),
       es_nota_interna: esNotaInterna,
       es_propuesta_solucion: esPropuesta,
     });
 
-    await this.repository.touch(ticket.id);
+    if (adjuntoIds.length > 0) {
+      await this.repository.enlazarAdjuntos(mensaje.id, ticket.id, usuario.id, adjuntoIds);
+    }
+
+    await this.repository.marcarActualizado(ticket.id);
+
+    const mensajeConAdjuntos =
+      adjuntoIds.length > 0 ? await this.repository.buscarMensajePorId(mensaje.id) : null;
 
     if (esPropuesta) {
       const updated = await this.repository.updateEstado(ticket.id, EstadoTicket.En_revision);
 
-      await this.repository.createHistorial({
+      await this.repository.crearHistorial({
         ticket_id: ticket.id,
         usuario_id: usuario.id,
         tipo_evento: TipoEventoHistorial.PROPUESTA_SOLUCION,
@@ -281,10 +419,10 @@ export class TicketsService {
       );
     }
 
-    return mensaje;
+    return mensajeConAdjuntos ?? mensaje;
   }
 
-  async aprobar(id: string, usuario: AuthUsuario): Promise<Ticket> {
+  async aprobar(id: string, usuario: UsuarioAutenticado): Promise<Ticket> {
     const ticket = await this.getTicketPermitido(id, usuario);
 
     if (ticket.usuario_creador.id !== usuario.id) {
@@ -297,7 +435,7 @@ export class TicketsService {
 
     const updated = await this.repository.updateEstado(id, EstadoTicket.Resuelto, new Date());
 
-    await this.repository.createHistorial({
+    await this.repository.crearHistorial({
       ticket_id: ticket.id,
       usuario_id: usuario.id,
       tipo_evento: TipoEventoHistorial.CAMBIO_ESTADO,
@@ -318,7 +456,7 @@ export class TicketsService {
     return updated;
   }
 
-  async rechazar(id: string, usuario: AuthUsuario): Promise<Ticket> {
+  async rechazar(id: string, usuario: UsuarioAutenticado): Promise<Ticket> {
     const ticket = await this.getTicketPermitido(id, usuario);
 
     if (ticket.usuario_creador.id !== usuario.id) {
@@ -331,7 +469,7 @@ export class TicketsService {
 
     const updated = await this.repository.updateEstado(id, EstadoTicket.En_proceso);
 
-    await this.repository.createHistorial({
+    await this.repository.crearHistorial({
       ticket_id: ticket.id,
       usuario_id: usuario.id,
       tipo_evento: TipoEventoHistorial.CAMBIO_ESTADO,
@@ -352,17 +490,17 @@ export class TicketsService {
     return updated;
   }
 
-  async getHistorial(id: string, usuario: AuthUsuario) {
+  async obtenerHistorial(id: string, usuario: UsuarioAutenticado) {
     await this.getTicketPermitido(id, usuario);
-    return this.repository.findHistorial(id);
+    return this.repository.buscarHistorial(id);
   }
 
-  async getNotificaciones(usuario: AuthUsuario) {
-    return this.repository.findNotificaciones(usuario.id);
+  async obtenerNotificaciones(usuario: UsuarioAutenticado) {
+    return this.repository.buscarNotificaciones(usuario.id);
   }
 
-  async marcarNotificacionLeida(id: string, usuario: AuthUsuario): Promise<void> {
-    const updated = await this.repository.markNotificacionLeida(id, usuario.id);
+  async marcarNotificacionLeida(id: string, usuario: UsuarioAutenticado): Promise<void> {
+    const updated = await this.repository.marcarNotificacionLeida(id, usuario.id);
 
     if (!updated) {
       throw new ApiError(404, "No se ha encontrado la notificación");

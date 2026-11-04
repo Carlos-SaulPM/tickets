@@ -16,7 +16,7 @@ const linkClass = (active: boolean) =>
 export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { session } = useAuth();
+  const { sesion } = useAuth();
 
   const handleLogout = () => {
     authService.logout();
@@ -24,19 +24,24 @@ export function Navbar() {
   };
 
   return (
-    <header className="bg-card border-b">
+    <header className="bg-card/95 supports-[backdrop-filter]:bg-card/80 border-b backdrop-blur">
       <div className="container mx-auto flex h-16 items-center justify-between gap-4 px-4">
         <div className="flex items-center gap-6">
           <Link href="/" className="text-lg font-bold tracking-tight">
             Sistema de Tickets
           </Link>
           <nav className="flex items-center gap-4">
-            {session?.usuario.rol === "Administrador" && (
+            {sesion && (
+              <Link href="/tickets" className={linkClass(pathname.startsWith("/tickets"))}>
+                Tickets
+              </Link>
+            )}
+            {sesion?.usuario.rol === "Administrador" && (
               <Link href="/users" className={linkClass(pathname === "/users")}>
                 Usuarios
               </Link>
             )}
-            {session && (
+            {sesion && (
               <Link href="/perfil" className={linkClass(pathname === "/perfil")}>
                 Perfil
               </Link>
@@ -45,12 +50,12 @@ export function Navbar() {
         </div>
 
         <div className="flex items-center gap-3">
-          {session ? (
+          {sesion ? (
             <>
               <div className="hidden items-center gap-2 sm:flex">
-                <span className="text-sm font-medium">{session.usuario.nombre}</span>
-                <Badge variant={session.usuario.rol === "Administrador" ? "default" : "secondary"}>
-                  {session.usuario.rol}
+                <span className="text-sm font-medium">{sesion.usuario.nombre}</span>
+                <Badge variant={sesion.usuario.rol === "Administrador" ? "default" : "secondary"}>
+                  {sesion.usuario.rol}
                 </Badge>
               </div>
               <Button variant="outline" size="sm" onClick={handleLogout}>

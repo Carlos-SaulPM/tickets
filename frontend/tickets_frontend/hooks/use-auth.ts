@@ -3,11 +3,11 @@
 import { useMemo, useSyncExternalStore } from "react";
 
 import {
-  getServerSessionSnapshot,
-  getSessionSnapshot,
-  parseSession,
-  subscribeSession,
-} from "@/lib/session";
+  obtenerSnapshotSesion,
+  obtenerSnapshotSesionServidor,
+  parsearSesion,
+  suscribirSesion,
+} from "@/lib/sesion";
 
 const emptySubscribe = () => () => undefined;
 const getClientSnapshot = () => true;
@@ -15,14 +15,14 @@ const getServerSnapshot = () => false;
 
 export const useAuth = () => {
   const snapshot = useSyncExternalStore(
-    subscribeSession,
-    getSessionSnapshot,
-    getServerSessionSnapshot
+    suscribirSesion,
+    obtenerSnapshotSesion,
+    obtenerSnapshotSesionServidor
   );
 
   const isClient = useSyncExternalStore(emptySubscribe, getClientSnapshot, getServerSnapshot);
 
-  const session = useMemo(() => parseSession(snapshot), [snapshot]);
+  const sesion = useMemo(() => parsearSesion(snapshot), [snapshot]);
 
-  return { session, isClient };
+  return { sesion, isClient };
 };

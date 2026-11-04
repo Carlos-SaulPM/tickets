@@ -1,7 +1,7 @@
 import { prisma } from "@/db/prisma";
 import type { Prisma } from "@/generated/prisma/client";
 
-import type { CreateCategoriaInput, UpdateCategoriaInput } from "./categorias.schema";
+import type { ActualizarCategoriaInput, CrearCategoriaInput } from "./categorias.schema";
 import type { Categoria } from "./categorias.types";
 
 const categoriaSelect = {
@@ -11,21 +11,21 @@ const categoriaSelect = {
 } as const;
 
 export class CategoriaRepository {
-  findAll(): Promise<Categoria[]> {
+  listar(): Promise<Categoria[]> {
     return prisma.categoria.findMany({
       select: categoriaSelect,
       orderBy: { nombre: "asc" },
     });
   }
 
-  findById(id: string): Promise<Categoria | null> {
+  buscarPorId(id: string): Promise<Categoria | null> {
     return prisma.categoria.findUnique({
       where: { id },
       select: categoriaSelect,
     });
   }
 
-  create(data: CreateCategoriaInput): Promise<Categoria> {
+  crear(data: CrearCategoriaInput): Promise<Categoria> {
     return prisma.categoria.create({
       data: {
         nombre: data.nombre,
@@ -35,7 +35,7 @@ export class CategoriaRepository {
     });
   }
 
-  async update(id: string, data: UpdateCategoriaInput): Promise<Categoria | null> {
+  async actualizar(id: string, data: ActualizarCategoriaInput): Promise<Categoria | null> {
     const updateData: Prisma.CategoriaUpdateManyMutationInput = {};
 
     if (data.nombre !== undefined) updateData.nombre = data.nombre;
@@ -48,6 +48,6 @@ export class CategoriaRepository {
 
     if (result.count === 0) return null;
 
-    return this.findById(id);
+    return this.buscarPorId(id);
   }
 }

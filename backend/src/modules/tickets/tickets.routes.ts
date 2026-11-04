@@ -1,22 +1,26 @@
 import { Router } from "express";
 
+import { recibirAdjunto } from "@/config/uploads";
 import { authMiddleware } from "@/middlewares/auth.middleware";
 
+import { AdjuntosController } from "./adjuntos.controller";
 import { TicketsController } from "./tickets.controller";
 
 const router = Router();
 
 router.use(authMiddleware);
 
-router.get("/", TicketsController.getAll.bind(TicketsController));
-router.post("/", TicketsController.create.bind(TicketsController));
-router.get("/:id", TicketsController.getById.bind(TicketsController));
-router.patch("/:id", TicketsController.update.bind(TicketsController));
-router.post("/:id/asignar", TicketsController.assign.bind(TicketsController));
-router.get("/:id/mensajes", TicketsController.getMensajes.bind(TicketsController));
-router.post("/:id/mensajes", TicketsController.addMensaje.bind(TicketsController));
+router.get("/", TicketsController.listar.bind(TicketsController));
+router.post("/", TicketsController.crear.bind(TicketsController));
+router.get("/:id", TicketsController.obtenerPorId.bind(TicketsController));
+router.patch("/:id", TicketsController.actualizar.bind(TicketsController));
+router.post("/:id/asignar", TicketsController.asignar.bind(TicketsController));
+router.post("/:id/adjuntos", recibirAdjunto, AdjuntosController.subir.bind(AdjuntosController));
+router.patch("/:id/estado", TicketsController.cambiarEstado.bind(TicketsController));
+router.get("/:id/mensajes", TicketsController.obtenerMensajes.bind(TicketsController));
+router.post("/:id/mensajes", TicketsController.agregarMensaje.bind(TicketsController));
 router.post("/:id/aprobar", TicketsController.aprobar.bind(TicketsController));
 router.post("/:id/rechazar", TicketsController.rechazar.bind(TicketsController));
-router.get("/:id/historial", TicketsController.getHistorial.bind(TicketsController));
+router.get("/:id/historial", TicketsController.obtenerHistorial.bind(TicketsController));
 
 export default router;

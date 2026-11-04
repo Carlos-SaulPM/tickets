@@ -3,16 +3,16 @@ import type { Prisma } from "@/generated/prisma/client";
 import type { EstadoTicket } from "@/generated/prisma/enums";
 
 import type {
-  CreateHistorialRepositoryDTO,
-  CreateMensajeRepositoryDTO,
-  CreateNotificacionRepositoryDTO,
-  CreateTicketRepositoryDTO,
+  ActualizarTicketRepositoryDTO,
+  CrearHistorialRepositoryDTO,
+  CrearMensajeRepositoryDTO,
+  CrearNotificacionRepositoryDTO,
+  CrearTicketRepositoryDTO,
   HistorialTicket,
   Notificacion,
   Ticket,
   TicketMensaje,
   TicketUsuarioDetalle,
-  UpdateTicketRepositoryDTO,
 } from "./tickets.types";
 
 const usuarioResumenSelect = {
@@ -62,6 +62,14 @@ const mensajeSelect = {
   usuario: {
     select: usuarioResumenSelect,
   },
+  adjuntos: {
+    select: {
+      id: true,
+      nombre_original: true,
+      tipo_mime: true,
+      ruta_url: true,
+    },
+  },
 } satisfies Prisma.TicketMensajeSelect;
 
 const historialSelect = {
@@ -85,33 +93,44 @@ const notificacionSelect = {
 } satisfies Prisma.NotificacionSelect;
 
 export class TicketRepository {
-  findAll(where: Prisma.TicketWhereInput): Promise<Ticket[]> {
-    return prisma.ticket.findMany({
-      where,
-      select: ticketSelect,
-      orderBy: { creado_en: "desc" },
-    });
+  async listarPaginado(
+    where: Prisma.TicketWhereInput,
+    skip: number,
+    take: number
+  ): Promise<{ total: number; tickets: Ticket[] }> {
+    const [total, tickets] = await prisma.$transaction([
+      prisma.ticket.count({ where }),
+      prisma.ticket.findMany({
+        where,
+        select: ticketSelect,
+        orderBy: [{ creado_en: "desc" }, { id: "asc" }],
+        skip,
+        take,
+      }),
+    ]);
+
+    return { total, tickets };
   }
 
-  findById(id: string): Promise<Ticket | null> {
+  buscarPorId(id: string): Promise<Ticket | null> {
     return prisma.ticket.findUnique({
       where: { id },
       select: ticketSelect,
     });
   }
 
-  count(): Promise<number> {
+  contar(): Promise<number> {
     return prisma.ticket.count();
   }
 
-  create(data: CreateTicketRepositoryDTO): Promise<Ticket> {
+  crear(data: CrearTicketRepositoryDTO): Promise<Ticket> {
     return prisma.ticket.create({
       data,
       select: ticketSelect,
     });
   }
 
-  async update(id: string, data: UpdateTicketRepositoryDTO): Promise<Ticket | null> {
+  async actualizar(id: string, data: ActualizarTicketRepositoryDTO): Promise<Ticket | null> {
     const updateData: Prisma.TicketUncheckedUpdateManyInput = {};
 
     if (data.asunto !== undefined) updateData.asunto = data.asunto;
@@ -127,7 +146,7 @@ export class TicketRepository {
 
     if (result.count === 0) return null;
 
-    return this.findById(id);
+    return this.buscarPorId(id);
   }
 
   updateEstado(id: string, estado: EstadoTicket, fecha_cierre?: Date | null): Promise<Ticket> {
@@ -141,7 +160,7 @@ export class TicketRepository {
     });
   }
 
-  assign(id: string, asignado_a_id: string, estado: EstadoTicket): Promise<Ticket> {
+  asignar(id: string, asignado_a_id: string, estado: EstadoTicket): Promise<Ticket> {
     return prisma.ticket.update({
       where: { id },
       data: { asignado_a_id, estado },
@@ -149,28 +168,28 @@ export class TicketRepository {
     });
   }
 
-  async touch(id: string): Promise<void> {
+  async marcarActualizado(id: string): Promise<void> {
     await prisma.ticket.update({
       where: { id },
       data: { actualizado_en: new Date() },
     });
   }
 
-  findCategoriaById(id: string) {
+  buscarCategoriaPorId(id: string) {
     return prisma.categoria.findUnique({
       where: { id },
       select: { id: true, nombre: true },
     });
   }
 
-  findAreaById(id: string) {
+  buscarAreaPorId(id: string) {
     return prisma.area.findUnique({
       where: { id },
       select: { id: true, nombre: true, activo: true },
     });
   }
 
-  findUsuarioById(id: string): Promise<TicketUsuarioDetalle | null> {
+  buscarUsuarioPorId(id: string): Promise<TicketUsuarioDetalle | null> {
     return prisma.usuario.findUnique({
       where: { id },
       select: {
@@ -182,14 +201,21 @@ export class TicketRepository {
     });
   }
 
-  createMensaje(data: CreateMensajeRepositoryDTO): Promise<TicketMensaje> {
+  crearMensaje(data: CrearMensajeRepositoryDTO): Promise<TicketMensaje> {
     return prisma.ticketMensaje.create({
       data,
       select: mensajeSelect,
     });
   }
 
-  findMensajes(ticket_id: string, incluirNotasInternas: boolean): Promise<TicketMensaje[]> {
+  buscarMensajePorId(id: string): Promise<TicketMensaje | null> {
+    return prisma.ticketMensaje.findUnique({
+      where: { id },
+      select: mensajeSelect,
+    });
+  }
+
+  buscarMensajes(ticket_id: string, incluirNotasInternas: boolean): Promise<TicketMensaje[]> {
     return prisma.ticketMensaje.findMany({
       where: {
         ticket_id,
@@ -200,14 +226,14 @@ export class TicketRepository {
     });
   }
 
-  createHistorial(data: CreateHistorialRepositoryDTO): Promise<HistorialTicket> {
+  crearHistorial(data: CrearHistorialRepositoryDTO): Promise<HistorialTicket> {
     return prisma.historialTicket.create({
       data,
       select: historialSelect,
     });
   }
 
-  findHistorial(ticket_id: string): Promise<HistorialTicket[]> {
+  buscarHistorial(ticket_id: string): Promise<HistorialTicket[]> {
     return prisma.historialTicket.findMany({
       where: { ticket_id },
       select: historialSelect,
@@ -215,14 +241,14 @@ export class TicketRepository {
     });
   }
 
-  createNotificacion(data: CreateNotificacionRepositoryDTO): Promise<Notificacion> {
+  crearNotificacion(data: CrearNotificacionRepositoryDTO): Promise<Notificacion> {
     return prisma.notificacion.create({
       data,
       select: notificacionSelect,
     });
   }
 
-  findNotificaciones(usuario_id: string): Promise<Notificacion[]> {
+  buscarNotificaciones(usuario_id: string): Promise<Notificacion[]> {
     return prisma.notificacion.findMany({
       where: { usuario_id },
       select: notificacionSelect,
@@ -230,7 +256,25 @@ export class TicketRepository {
     });
   }
 
-  async markNotificacionLeida(id: string, usuario_id: string): Promise<boolean> {
+  contarAdjuntosDisponibles(ticket_id: string, usuario_id: string, ids: string[]): Promise<number> {
+    return prisma.archivoAdjunto.count({
+      where: { id: { in: ids }, ticket_id, subido_por_id: usuario_id, mensaje_id: null },
+    });
+  }
+
+  async enlazarAdjuntos(
+    mensaje_id: string,
+    ticket_id: string,
+    usuario_id: string,
+    ids: string[]
+  ): Promise<void> {
+    await prisma.archivoAdjunto.updateMany({
+      where: { id: { in: ids }, ticket_id, subido_por_id: usuario_id, mensaje_id: null },
+      data: { mensaje_id },
+    });
+  }
+
+  async marcarNotificacionLeida(id: string, usuario_id: string): Promise<boolean> {
     const result = await prisma.notificacion.updateMany({
       where: { id, usuario_id },
       data: { leida: true },

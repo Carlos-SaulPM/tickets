@@ -1,10 +1,17 @@
 import "dotenv/config";
 
+import { copyFileSync, mkdirSync } from "node:fs";
+import { join, resolve } from "node:path";
 import { PrismaPg } from "@prisma/adapter-pg";
 import * as argon2 from "argon2";
 
 import { PrismaClient } from "../src/generated/prisma/client";
-import { EstadoUsuario, NombreRol } from "../src/generated/prisma/enums";
+import {
+  EstadoTicket,
+  EstadoUsuario,
+  NombreRol,
+  TipoEventoHistorial,
+} from "../src/generated/prisma/enums";
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -15,6 +22,9 @@ if (!connectionString) {
 const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString }),
 });
+
+const UPLOADS_DIR = resolve(process.env.UPLOADS_DIR ?? "./uploads");
+const ASSETS_DIR = join(process.cwd(), "prisma", "seed-assets");
 
 const roles: Array<{ nombre: NombreRol; descripcion: string }> = [
   { nombre: NombreRol.Administrador, descripcion: "Control total del sistema" },
@@ -56,6 +66,217 @@ const usuarios = [
     rol: NombreRol.Usuario,
   },
 ];
+
+const DEMO_TICKET_ID = "d0000000-0000-4000-8000-000000000001";
+
+interface AdjuntoDemo {
+  id: string;
+  mensajeId: string | null;
+  archivo: string;
+  nombre: string;
+  alt: string;
+  autorId: string;
+  hace: number;
+  incrustado: boolean;
+}
+
+/**
+ * Ticket de demostración con imágenes incrustadas, un adjunto suelto y un huérfano
+ * para probar `pnpm db:limpiar-adjuntos`. Es idempotente: refresca sus propias fechas.
+ */
+const sembrarDemostracion = async () => {
+  const [usuario, soporte, categoria, area] = await Promise.all([
+    prisma.usuario.findUnique({ where: { correo_electronico: "usuario@example.com" } }),
+    prisma.usuario.findUnique({ where: { correo_electronico: "soporte@example.com" } }),
+    prisma.categoria.findUnique({ where: { nombre: "Hardware" } }),
+    prisma.area.findUnique({ where: { nombre: "Sistemas" } }),
+  ]);
+
+  if (!usuario || !soporte || !categoria || !area) {
+    throw new Error(
+      "El seed de demostración necesita los usuarios base, la categoría Hardware y el área Sistemas"
+    );
+  }
+
+  const mensajeUno = "d0000000-0000-4000-8000-000000000011";
+  const mensajeDos = "d0000000-0000-4000-8000-000000000012";
+  const mensajeTres = "d0000000-0000-4000-8000-000000000013";
+
+  const ahora = Date.now();
+  const haceMinutos = (minutos: number) => new Date(ahora - minutos * 60 * 1000);
+
+  const adjuntos: AdjuntoDemo[] = [
+    {
+      id: "d0000000-0000-4000-8000-000000000021",
+      mensajeId: mensajeUno,
+      archivo: "captura-error.png",
+      nombre: "captura-error.png",
+      alt: "Captura del mensaje de error al iniciar el sistema",
+      autorId: usuario.id,
+      hace: 150,
+      incrustado: true,
+    },
+    {
+      id: "d0000000-0000-4000-8000-000000000022",
+      mensajeId: mensajeDos,
+      archivo: "pantalla-antes.png",
+      nombre: "pantalla-antes.png",
+      alt: "Pantalla del sistema antes del ajuste",
+      autorId: soporte.id,
+      hace: 140,
+      incrustado: true,
+    },
+    {
+      id: "d0000000-0000-4000-8000-000000000023",
+      mensajeId: mensajeDos,
+      archivo: "pantalla-despues.png",
+      nombre: "pantalla-despues.png",
+      alt: "Pantalla del sistema después del ajuste",
+      autorId: soporte.id,
+      hace: 140,
+      incrustado: true,
+    },
+    {
+      id: "d0000000-0000-4000-8000-000000000024",
+      mensajeId: mensajeTres,
+      archivo: "archivo-suelto.png",
+      nombre: "reporte-de-sesion.png",
+      alt: "Reporte de sesión adjunto sin incrustar",
+      autorId: soporte.id,
+      hace: 130,
+      incrustado: false,
+    },
+    {
+      id: "d0000000-0000-4000-8000-000000000025",
+      mensajeId: null,
+      archivo: "huerfano.png",
+      nombre: "huerfano.png",
+      alt: "Adjunto subido sin mensaje",
+      autorId: usuario.id,
+      hace: 48 * 60,
+      incrustado: false,
+    },
+  ];
+
+  const texto = (mensajeId: string, contenido: string) => {
+    const imagenes = adjuntos
+      .filter(adjunto => adjunto.mensajeId === mensajeId && adjunto.incrustado)
+      .map(adjunto => `<img src="/api/adjuntos/${adjunto.id}" alt="${adjunto.alt}" />`)
+      .join("");
+
+    return `<p>${contenido}</p>${imagenes}`;
+  };
+
+  const mensajes = [
+    {
+      id: mensajeUno,
+      usuarioId: usuario.id,
+      hace: 150,
+      mensaje: texto(
+        mensajeUno,
+        "Buen día. Adjunto la captura del error que aparece al iniciar el sistema."
+      ),
+    },
+    {
+      id: mensajeDos,
+      usuarioId: soporte.id,
+      hace: 140,
+      mensaje: texto(mensajeDos, "Comparé antes y después del ajuste. Las dos capturas:"),
+    },
+    {
+      id: mensajeTres,
+      usuarioId: soporte.id,
+      hace: 130,
+      mensaje: texto(
+        mensajeTres,
+        "También dejo el reporte de sesión, por si lo necesitas. No lo incrusté para no alargar el mensaje."
+      ),
+    },
+  ];
+
+  await prisma.ticket.upsert({
+    where: { id: DEMO_TICKET_ID },
+    update: {
+      asunto: "Demostración de imágenes y adjuntos",
+      descripcion:
+        "Ticket creado por el seed para revisar el visor de imágenes, los adjuntos sueltos y la limpieza de huérfanos. Se puede editar o cerrar sin afectar al resto del sistema.",
+      estado: EstadoTicket.En_proceso,
+      categoria_id: categoria.id,
+      area_id: area.id,
+      asignado_a_id: soporte.id,
+      creado_en: haceMinutos(160),
+    },
+    create: {
+      id: DEMO_TICKET_ID,
+      codigo: "#TK-DEMO",
+      asunto: "Demostración de imágenes y adjuntos",
+      descripcion:
+        "Ticket creado por el seed para revisar el visor de imágenes, los adjuntos sueltos y la limpieza de huérfanos. Se puede editar o cerrar sin afectar al resto del sistema.",
+      prioridad: "Media",
+      estado: EstadoTicket.En_proceso,
+      categoria_id: categoria.id,
+      area_id: area.id,
+      usuario_creador_id: usuario.id,
+      asignado_a_id: soporte.id,
+      creado_en: haceMinutos(160),
+    },
+  });
+
+  for (const mensaje of mensajes) {
+    await prisma.ticketMensaje.upsert({
+      where: { id: mensaje.id },
+      update: { mensaje: mensaje.mensaje, creado_en: haceMinutos(mensaje.hace) },
+      create: {
+        id: mensaje.id,
+        ticket_id: DEMO_TICKET_ID,
+        usuario_id: mensaje.usuarioId,
+        mensaje: mensaje.mensaje,
+        creado_en: haceMinutos(mensaje.hace),
+      },
+    });
+  }
+
+  for (const adjunto of adjuntos) {
+    const almacenado = join("tickets", DEMO_TICKET_ID, `${adjunto.id}.png`);
+    const destino = join(UPLOADS_DIR, almacenado);
+
+    mkdirSync(join(UPLOADS_DIR, "tickets", DEMO_TICKET_ID), { recursive: true });
+    copyFileSync(join(ASSETS_DIR, adjunto.archivo), destino);
+
+    const datos = {
+      ticket_id: DEMO_TICKET_ID,
+      mensaje_id: adjunto.mensajeId,
+      nombre_original: adjunto.nombre,
+      nombre_almacenado: almacenado,
+      tipo_mime: "image/png",
+      ruta_url: `/api/v1/adjuntos/${adjunto.id}`,
+      subido_por_id: adjunto.autorId,
+      creado_en: haceMinutos(adjunto.hace),
+    };
+
+    await prisma.archivoAdjunto.upsert({
+      where: { id: adjunto.id },
+      update: datos,
+      create: { id: adjunto.id, ...datos },
+    });
+  }
+
+  await prisma.historialTicket.upsert({
+    where: { id: "d0000000-0000-4000-8000-000000000031" },
+    update: {},
+    create: {
+      id: "d0000000-0000-4000-8000-000000000031",
+      ticket_id: DEMO_TICKET_ID,
+      usuario_id: usuario.id,
+      tipo_evento: TipoEventoHistorial.CREACION,
+      estado_nuevo: EstadoTicket.Abierto,
+      detalle: "Ticket de demostración",
+      fecha_cambio: haceMinutos(160),
+    },
+  });
+
+  console.log("Ticket de demostración #TK-DEMO listo.");
+};
 
 const main = async () => {
   const rolesPorNombre = new Map<NombreRol, string>();
@@ -118,6 +339,8 @@ const main = async () => {
       },
     });
   }
+
+  await sembrarDemostracion();
 
   console.log("Seed completado.");
 };

@@ -1,28 +1,28 @@
 import { apiFetch } from "@/lib/api";
-import { clearSession, getSession, saveSession } from "@/lib/session";
-import type { AuthUser, LoginInput, LoginResponse } from "@/types/auth.types";
+import { guardarSesion, limpiarSesion, obtenerSesion } from "@/lib/sesion";
+import type { LoginInput, LoginResponse, UsuarioAutenticado } from "@/types/auth.types";
 
 export const authService = {
-  async login(datos: LoginInput): Promise<AuthUser> {
+  async login(datos: LoginInput): Promise<UsuarioAutenticado> {
     const response = await apiFetch<LoginResponse>("/autenticacion/login", {
       method: "POST",
       body: JSON.stringify(datos),
       auth: false,
     });
 
-    saveSession({ token: response.token, usuario: response.usuario });
+    guardarSesion({ token: response.token, usuario: response.usuario });
 
     return response.usuario;
   },
 
-  async getPerfil(): Promise<AuthUser> {
-    const response = await apiFetch<{ usuario: AuthUser }>("/autenticacion/perfil");
+  async getPerfil(): Promise<UsuarioAutenticado> {
+    const response = await apiFetch<{ usuario: UsuarioAutenticado }>("/autenticacion/perfil");
     return response.usuario;
   },
 
   logout(): void {
-    clearSession();
+    limpiarSesion();
   },
 
-  getSession,
+  obtenerSesion,
 };

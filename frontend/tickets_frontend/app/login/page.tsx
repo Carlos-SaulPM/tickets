@@ -21,7 +21,7 @@ import { authService } from "@/services/auth.service";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { session } = useAuth();
+  const { sesion } = useAuth();
 
   const [correoElectronico, setCorreoElectronico] = useState("");
   const [contrasena, setContrasena] = useState("");
@@ -34,11 +34,12 @@ export default function LoginPage() {
     setIsSubmitting(true);
 
     try {
-      const usuario = await authService.login({
+      await authService.login({
         correo_electronico: correoElectronico.trim(),
         contrasena,
       });
-      router.replace(usuario.rol === "Administrador" ? "/users" : "/perfil");
+      router.replace("/tickets");
+      router.refresh();
     } catch (loginError) {
       setError(loginError instanceof ApiError ? loginError.message : "No se pudo iniciar sesión");
     } finally {
@@ -47,7 +48,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="bg-muted/30 flex min-h-screen items-center justify-center px-4">
+    <div id="contenido" className="bg-muted/30 flex min-h-screen items-center justify-center px-4">
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle>Iniciar sesión</CardTitle>
@@ -87,11 +88,11 @@ export default function LoginPage() {
               />
             </div>
 
-            {session && (
+            {sesion && (
               <p className="text-muted-foreground text-sm">
                 Ya tienes una sesión activa.{" "}
                 <Link
-                  href={session.usuario.rol === "Administrador" ? "/users" : "/perfil"}
+                  href={sesion.usuario.rol === "Administrador" ? "/users" : "/perfil"}
                   className="text-foreground underline underline-offset-4"
                 >
                   Continuar

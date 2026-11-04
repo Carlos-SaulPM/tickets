@@ -1,4 +1,4 @@
-import { getToken } from "@/lib/session";
+import { obtenerToken } from "@/lib/sesion";
 
 const DEFAULT_API_BASE_URL = "http://localhost:3000/api/v1";
 
@@ -29,17 +29,18 @@ const getErrorMessage = (payload: unknown, status: number) => {
   return `Error ${status}`;
 };
 
-interface ApiFetchOptions extends RequestInit {
-  auth?: boolean;
+interface ApiRequestOptions extends RequestInit {
+  token?: string | null;
+  baseUrl?: string;
 }
 
-export const apiFetch = async <T>(path: string, options: ApiFetchOptions = {}): Promise<T> => {
-  const { auth = true, headers, ...rest } = options;
+export const apiRequest = async <T>(path: string, options: ApiRequestOptions = {}): Promise<T> => {
+  const { token = null, baseUrl = API_BASE_URL, headers, ...rest } = options;
 
   const requestHeaders = new Headers(headers);
-  const token = auth ? getToken() : null;
+  const esFormData = rest.body instanceof FormData;
 
-  if (!requestHeaders.has("Content-Type")) {
+  if (!requestHeaders.has("Content-Type") && !esFormData) {
     requestHeaders.set("Content-Type", "application/json");
   }
 
@@ -47,7 +48,7 @@ export const apiFetch = async <T>(path: string, options: ApiFetchOptions = {}): 
     requestHeaders.set("Authorization", `Bearer ${token}`);
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(`${baseUrl}${path}`, {
     ...rest,
     headers: requestHeaders,
   });
@@ -59,4 +60,14 @@ export const apiFetch = async <T>(path: string, options: ApiFetchOptions = {}): 
   }
 
   return payload as T;
+};
+
+interface ApiFetchOptions extends RequestInit {
+  auth?: boolean;
+}
+
+export const apiFetch = <T>(path: string, options: ApiFetchOptions = {}): Promise<T> => {
+  const { auth = true, ...rest } = options;
+
+  return apiRequest<T>(path, { ...rest, token: auth ? obtenerToken() : null });
 };

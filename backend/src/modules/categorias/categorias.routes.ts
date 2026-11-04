@@ -8,8 +8,8 @@ const router = Router();
 
 router.use(authMiddleware);
 
-router.get("/", CategoriasController.getAll.bind(CategoriasController));
-router.post("/", CategoriasController.create.bind(CategoriasController));
-router.patch("/:id", CategoriasController.update.bind(CategoriasController));
+router.get("/", CategoriasController.listar.bind(CategoriasController));
+router.post("/", CategoriasController.crear.bind(CategoriasController));
+router.patch("/:id", CategoriasController.actualizar.bind(CategoriasController));
 
 export default router;
