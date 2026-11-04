@@ -190,6 +190,9 @@ importers:
       morgan:
         specifier: ^1.12.1
         version: 1.12.1
+      nodemailer:
+        specifier: ^10.3.1
+        version: 10.3.1
       pg:
         specifier: ^8.23.1
         version: 8.23.1
@@ -2550,6 +2553,10 @@ packages:
   node-gyp-build@4.8.4:
     resolution: {integrity: sha512-LA4ZjwlnUblHVgq0oBF3Jl/6h/Nvs5fzBLwdEF4nuxnFdsfajde4WfxtJr3CaiH+F6ewcIB/q4jQ4UzPyid+CQ==}
     hasBin: true
+
+  nodemailer@10.3.1:
+    resolution: {integrity: sha512-uF0AFsJC07Y1vdW7p580DKAnh7rAO+4UPSSB3mDCPNDufoiaOebV6JmrzpxB14OjEEEiBsNdYoM2Y+fN8M7BBA==}
+    engines: {node: '>=20.0.0'}
 
   normalize-path@3.0.0:
     resolution: {integrity: sha512-6eZs5Ls3WtCisHWp9S2GUy8dqkpGi4BVSz3GaqiE6ezub0512ESztXUwUB6C6IKbQkY2Pnb/mD4WYojCRwcwLA==}
@@ -5430,6 +5437,8 @@ snapshots:
   node-addon-api@8.9.2: {}
 
   node-gyp-build@4.8.4: {}
+
+  nodemailer@10.3.1: {}
 
   normalize-path@3.0.0: {}
 
