@@ -1,7 +1,6 @@
 import { prisma } from "@/db/prisma";
 import type { Prisma } from "@/generated/prisma/client";
 
-
 import type {
   CreateUsuariosRepositoryDTO,
   UpdateUsuariosRepositoryDTO,

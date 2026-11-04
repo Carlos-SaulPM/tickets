@@ -1,7 +1,9 @@
-import { PrismaClient } from "@prisma/client/extension";
-import type { Notificacion} from "@/generated/prisma/models";
+import { PrismaClient, type Prisma } from '@/generated/prisma/client';
 
-export const prisma = new PrismaClient();
+export const prisma = new PrismaClient({} as any);
+
+export type Notificacion = Prisma.NotificacionGetPayload<{}>;
+
 export type CreateNotificationInput = {
   userId: string;
   ticketId?: string;
@@ -42,8 +44,6 @@ export class NotificationRepository {
       orderBy: { creado_en: 'desc' },
     });
   }
-
-
 
   async markAsRead(id: string): Promise<Notificacion> {
     return await prisma.notificacion.update({
