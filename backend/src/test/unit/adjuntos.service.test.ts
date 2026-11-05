@@ -124,6 +124,20 @@ describe("AdjuntosService.crear", () => {
     expect(crear).not.toHaveBeenCalled();
   });
 
+  it("rechaza un ticket cerrado", async () => {
+    vi.spyOn(ticketsRepository, "buscarPorId").mockResolvedValue({
+      ...buildTicket(soporte),
+      estado: "Cerrado",
+    });
+    const crear = vi.spyOn(repository, "crear");
+
+    await expect(service.crear(TICKET_ID, usuarioSoporte, archivo)).rejects.toMatchObject({
+      status: 400,
+    });
+
+    expect(crear).not.toHaveBeenCalled();
+  });
+
   it("guarda el adjunto con la ruta del ticket y la URL de la API", async () => {
     vi.spyOn(ticketsRepository, "buscarPorId").mockResolvedValue(buildTicket(soporte));
     const crear = vi.spyOn(repository, "crear").mockResolvedValue(buildAdjunto(soporte.id));

@@ -22,9 +22,9 @@ type Accion = "aprobar" | "rechazar";
 const TEXTOS = {
   aprobar: {
     titulo: "Aprobar solución",
-    descripcion: "El ticket pasará a Resuelto y se avisará al soporte.",
+    descripcion: "El ticket se cerrará y se avisará al soporte.",
     boton: "Sí, aprobar",
-    exito: "Solución aprobada",
+    exito: "Solución aprobada, ticket cerrado",
   },
   rechazar: {
     titulo: "Rechazar solución",

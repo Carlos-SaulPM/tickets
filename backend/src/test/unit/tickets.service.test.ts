@@ -5,8 +5,12 @@ import { TicketsService } from "@/modules/tickets/tickets.service";
 import type { Ticket, TicketUsuarioResumen } from "@/modules/tickets/tickets.types";
 import type { UsuarioAutenticado } from "@/types/autenticacion.types";
 
+const { enviarCorreoMock } = vi.hoisted(() => ({
+  enviarCorreoMock: vi.fn().mockResolvedValue(true),
+}));
+
 vi.mock("@/services/correo/correo.service", () => ({
-  correoService: { enviarCorreo: vi.fn().mockResolvedValue(true) },
+  correoService: { enviarCorreo: enviarCorreoMock },
 }));
 
 const creador: TicketUsuarioResumen = {
@@ -82,6 +86,8 @@ const createRepositoryMock = () => ({
   buscarMensajePorId: vi.fn(),
   contarAdjuntosDisponibles: vi.fn(),
   enlazarAdjuntos: vi.fn(),
+  contarNotificaciones: vi.fn(),
+  marcarTodasLeidas: vi.fn(),
 });
 
 describe("TicketsService.cambiarEstado", () => {
@@ -346,5 +352,161 @@ describe("TicketsService.agregarMensaje", () => {
       expect.objectContaining({ ticket_id: ticket.id, usuario_id: soporte.id })
     );
     expect(repository.marcarActualizado).toHaveBeenCalledWith(ticket.id);
+  });
+
+  it("rechaza mensajes en un ticket cerrado", async () => {
+    const ticket = buildTicket("Cerrado", soporte);
+    repository.buscarPorId.mockResolvedValue(ticket);
+
+    await expect(
+      service.agregarMensaje(ticket.id, { mensaje: "<p>Hola</p>" }, usuarioCreador)
+    ).rejects.toMatchObject({ status: 400 });
+
+    expect(repository.crearMensaje).not.toHaveBeenCalled();
+  });
+
+  it("rechaza mensajes en un ticket resuelto", async () => {
+    const ticket = buildTicket("Resuelto", soporte);
+    repository.buscarPorId.mockResolvedValue(ticket);
+
+    await expect(
+      service.agregarMensaje(ticket.id, { mensaje: "<p>Hola</p>" }, usuarioSoporte)
+    ).rejects.toMatchObject({ status: 400 });
+
+    expect(repository.crearMensaje).not.toHaveBeenCalled();
+  });
+
+  it("avisa al creador cuando responde Soporte", async () => {
+    const ticket = buildTicket("En_proceso", soporte);
+    repository.buscarPorId.mockResolvedValue(ticket);
+    repository.crearMensaje.mockResolvedValue({ id: "m1", mensaje: "<p>Hola</p>", adjuntos: [] });
+
+    await service.agregarMensaje(ticket.id, { mensaje: "<p>Hola</p>" }, usuarioSoporte);
+
+    expect(repository.crearNotificacion).toHaveBeenCalledWith(
+      expect.objectContaining({
+        usuario_id: creador.id,
+        ticket_id: ticket.id,
+        mensaje: `Nuevo mensaje de ${soporte.nombre}`,
+      })
+    );
+  });
+
+  it("avisa al Soporte asignado cuando responde el creador", async () => {
+    const ticket = buildTicket("En_proceso", soporte);
+    repository.buscarPorId.mockResolvedValue(ticket);
+    repository.crearMensaje.mockResolvedValue({ id: "m1", mensaje: "<p>Hola</p>", adjuntos: [] });
+
+    await service.agregarMensaje(ticket.id, { mensaje: "<p>Hola</p>" }, usuarioCreador);
+
+    expect(repository.crearNotificacion).toHaveBeenCalledWith(
+      expect.objectContaining({ usuario_id: soporte.id })
+    );
+  });
+
+  it("no avisa en las notas internas", async () => {
+    const ticket = buildTicket("En_proceso", soporte);
+    repository.buscarPorId.mockResolvedValue(ticket);
+    repository.crearMensaje.mockResolvedValue({ id: "m1", mensaje: "<p>Hola</p>", adjuntos: [] });
+
+    await service.agregarMensaje(
+      ticket.id,
+      { mensaje: "<p>Hola</p>", es_nota_interna: true },
+      usuarioSoporte
+    );
+
+    expect(repository.crearNotificacion).not.toHaveBeenCalled();
+  });
+
+  it("avisa la propuesta sin duplicar el mensaje nuevo", async () => {
+    const ticket = buildTicket("En_proceso", soporte);
+    repository.buscarPorId.mockResolvedValue(ticket);
+    repository.crearMensaje.mockResolvedValue({
+      id: "m1",
+      mensaje: "<p>Propongo</p>",
+      adjuntos: [],
+    });
+    repository.updateEstado.mockResolvedValue({ ...ticket, estado: "En_revision" });
+
+    await service.agregarMensaje(
+      ticket.id,
+      { mensaje: "<p>Propongo</p>", es_propuesta_solucion: true },
+      usuarioSoporte
+    );
+
+    expect(repository.crearNotificacion).toHaveBeenCalledTimes(1);
+    expect(repository.crearNotificacion).toHaveBeenCalledWith(
+      expect.objectContaining({
+        usuario_id: creador.id,
+        mensaje: "Se propuso una solución a tu ticket",
+      })
+    );
+  });
+
+  it("no envía correo cuando el destinatario es Administrador", async () => {
+    const ticket = buildTicket("En_proceso", soporte);
+    enviarCorreoMock.mockClear();
+    repository.buscarPorId.mockResolvedValue(ticket);
+    repository.crearMensaje.mockResolvedValue({ id: "m1", mensaje: "<p>Hola</p>", adjuntos: [] });
+    repository.buscarUsuarioPorId.mockResolvedValue({
+      ...creador,
+      rol: { nombre: "Administrador" },
+    });
+
+    await service.agregarMensaje(ticket.id, { mensaje: "<p>Hola</p>" }, usuarioSoporte);
+
+    expect(repository.crearNotificacion).toHaveBeenCalled();
+    expect(enviarCorreoMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("TicketsService.asignar", () => {
+  let repository: ReturnType<typeof createRepositoryMock>;
+  let service: TicketsService;
+
+  beforeEach(() => {
+    repository = createRepositoryMock();
+    service = new TicketsService(repository);
+  });
+
+  it("no se autoavisa cuando el Soporte toma el ticket", async () => {
+    const ticket = buildTicket("Abierto", null);
+    repository.buscarPorId.mockResolvedValue(ticket);
+    repository.buscarUsuarioPorId.mockResolvedValue({ ...soporte, rol: { nombre: "Soporte" } });
+    repository.asignar.mockResolvedValue({ ...ticket, estado: "En_proceso", asignado_a: soporte });
+
+    await service.asignar(ticket.id, soporte.id, usuarioSoporte);
+
+    expect(repository.crearNotificacion).not.toHaveBeenCalled();
+  });
+});
+
+describe("TicketsService.aprobar", () => {
+  let repository: ReturnType<typeof createRepositoryMock>;
+  let service: TicketsService;
+
+  beforeEach(() => {
+    repository = createRepositoryMock();
+    service = new TicketsService(repository);
+  });
+
+  it("cierra el ticket al aprobar y avisa al Soporte", async () => {
+    const ticket = buildTicket("En_revision", soporte);
+    repository.buscarPorId.mockResolvedValue(ticket);
+    repository.updateEstado.mockResolvedValue({ ...ticket, estado: "Cerrado" });
+
+    const actualizado = await service.aprobar(ticket.id, usuarioCreador);
+
+    expect(repository.updateEstado).toHaveBeenCalledWith(ticket.id, "Cerrado", expect.any(Date));
+    expect(actualizado.estado).toBe("Cerrado");
+    expect(repository.crearHistorial).toHaveBeenCalledWith(
+      expect.objectContaining({ detalle: "Solución aprobada; ticket cerrado" })
+    );
+    expect(repository.crearNotificacion).toHaveBeenCalledWith(
+      expect.objectContaining({
+        usuario_id: soporte.id,
+        mensaje: "El usuario aprobó la solución y el ticket se cerró",
+      })
+    );
   });
 });

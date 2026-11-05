@@ -500,7 +500,17 @@ describe("API tickets", () => {
       .set("Authorization", `Bearer ${userSession.body.token}`);
 
     expect(approved.status).toBe(200);
-    expect(getBody<TicketBody>(approved).data.estado).toBe("Resuelto");
+    expect(getBody<TicketBody>(approved).data).toMatchObject({
+      estado: "Cerrado",
+    });
+    expect(getBody<TicketBody>(approved).data.fecha_cierre).not.toBeNull();
+
+    const mensajeTrasCierre = await request(app)
+      .post(`/api/v1/tickets/${ticket.id}/mensajes`)
+      .set("Authorization", `Bearer ${userSession.body.token}`)
+      .send({ mensaje: "<p>Mensaje fuera de tiempo</p>" });
+
+    expect(mensajeTrasCierre.status).toBe(400);
 
     const userNotifications = await request(app)
       .get("/api/v1/notificaciones")
@@ -509,9 +519,10 @@ describe("API tickets", () => {
       .get("/api/v1/notificaciones")
       .set("Authorization", `Bearer ${support.body.token}`);
 
-    expect(getBody<NotificacionListBody>(userNotifications).data.length).toBeGreaterThanOrEqual(2);
+    // Crear ya no notifica: el creador recibe la propuesta y el Soporte la aprobación.
+    expect(getBody<NotificacionListBody>(userNotifications).data.length).toBeGreaterThanOrEqual(1);
     expect(getBody<NotificacionListBody>(supportNotifications).data.length).toBeGreaterThanOrEqual(
-      2
+      1
     );
   });
 
@@ -951,49 +962,50 @@ describe("API tickets: Soporte debe tomar antes de responder", () => {
   });
 });
 
+const crearTicket = async (token: string) => {
+  const categorias = await request(app)
+    .get("/api/v1/categorias")
+    .set("Authorization", `Bearer ${token}`);
+  const categoria = getBody<CategoriaListBody>(categorias).data[0];
+
+  const created = await request(app)
+    .post("/api/v1/tickets")
+    .set("Authorization", `Bearer ${token}`)
+    .send({
+      asunto: `Adjuntos ${Date.now()}`,
+      descripcion: "Ticket para probar adjuntos.",
+      categoria_id: categoria?.id,
+    });
+
+  return getBody<TicketBody>(created).data.id;
+};
+
+const crearOtroUsuario = async (rol: "Usuario" | "Soporte" = "Usuario") => {
+  const admin = await login("admin@example.com", "admin123");
+  const roles = await request(app)
+    .get("/api/v1/roles")
+    .set("Authorization", `Bearer ${admin.body.token}`);
+  const rolEncontrado = getBody<RolesBody>(roles).data.find(role => role.nombre === rol);
+  const sufijo = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  const correo = `${rol.toLowerCase()}-${sufijo}@example.com`;
+
+  const created = await request(app)
+    .post("/api/v1/users")
+    .set("Authorization", `Bearer ${admin.body.token}`)
+    .send({
+      nombre: "Otro",
+      apellido_paterno: rol,
+      apellido_materno: "Prueba",
+      correo_electronico: correo,
+      rol_id: rolEncontrado?.id,
+    });
+
+  const credenciales = getBody<CreateUserBody>(created).data;
+
+  return login(credenciales.correo_electronico, credenciales.contrasena);
+};
+
 describe("API adjuntos", () => {
-  const crearTicket = async (token: string) => {
-    const categorias = await request(app)
-      .get("/api/v1/categorias")
-      .set("Authorization", `Bearer ${token}`);
-    const categoria = getBody<CategoriaListBody>(categorias).data[0];
-
-    const created = await request(app)
-      .post("/api/v1/tickets")
-      .set("Authorization", `Bearer ${token}`)
-      .send({
-        asunto: `Adjuntos ${Date.now()}`,
-        descripcion: "Ticket para probar adjuntos.",
-        categoria_id: categoria?.id,
-      });
-
-    return getBody<TicketBody>(created).data.id;
-  };
-
-  const crearOtroUsuario = async () => {
-    const admin = await login("admin@example.com", "admin123");
-    const roles = await request(app)
-      .get("/api/v1/roles")
-      .set("Authorization", `Bearer ${admin.body.token}`);
-    const rolUsuario = getBody<RolesBody>(roles).data.find(role => role.nombre === "Usuario");
-    const correo = `adjuntos${Date.now()}@example.com`;
-
-    const created = await request(app)
-      .post("/api/v1/users")
-      .set("Authorization", `Bearer ${admin.body.token}`)
-      .send({
-        nombre: "Otro",
-        apellido_paterno: "Usuario",
-        apellido_materno: "Prueba",
-        correo_electronico: correo,
-        rol_id: rolUsuario?.id,
-      });
-
-    const credenciales = getBody<CreateUserBody>(created).data;
-
-    return login(credenciales.correo_electronico, credenciales.contrasena);
-  };
-
   it("sube, entrega y enlaza una imagen al mensaje", async () => {
     const userSession = await login("usuario@example.com", "usuario123");
     const ticketId = await crearTicket(userSession.body.token);
@@ -1167,5 +1179,187 @@ describe("API adjuntos", () => {
       .send({ mensaje: "<p>Segundo</p>", adjunto_ids: [adjunto.id] });
 
     expect(segundo.status).toBe(400);
+  });
+});
+
+interface NotificacionDto {
+  id: string;
+  ticket_id: string | null;
+  mensaje: string;
+  leida: boolean;
+  ticket: { id: string; codigo: string; asunto: string; estado: string } | null;
+}
+
+interface NotificacionesBody {
+  data: NotificacionDto[];
+  meta: { total: number; no_leidas: number };
+}
+
+describe("API notificaciones", () => {
+  const leer = async (token: string, consulta = "") =>
+    getBody<NotificacionesBody>(
+      await request(app)
+        .get(`/api/v1/notificaciones${consulta}`)
+        .set("Authorization", `Bearer ${token}`)
+    );
+
+  const crearConversacion = async () => {
+    const creador = await crearOtroUsuario();
+    const soporte = await crearOtroUsuario("Soporte");
+    const ticketId = await crearTicket(creador.body.token);
+
+    await request(app)
+      .post(`/api/v1/tickets/${ticketId}/asignar`)
+      .set("Authorization", `Bearer ${soporte.body.token}`)
+      .send({ asignado_a_id: soporte.body.usuario.id });
+
+    const responder = (token: string, mensaje: string) =>
+      request(app)
+        .post(`/api/v1/tickets/${ticketId}/mensajes`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ mensaje });
+
+    return { creador, soporte, ticketId, responder };
+  };
+
+  it("avisa al creador cuando Soporte responde", async () => {
+    const { creador, soporte, ticketId, responder } = await crearConversacion();
+
+    expect((await leer(creador.body.token)).data).toHaveLength(0);
+    expect((await responder(soporte.body.token, "<p>Ya lo reviso</p>")).status).toBe(201);
+
+    const cuerpo = await leer(creador.body.token);
+
+    expect(cuerpo.data).toHaveLength(1);
+    expect(cuerpo.data[0]).toMatchObject({
+      ticket_id: ticketId,
+      leida: false,
+      ticket: { id: ticketId, codigo: expect.stringContaining("#TK-") as string },
+    });
+    expect(cuerpo.data[0]?.mensaje).toContain("Nuevo mensaje de");
+    expect(cuerpo.meta).toEqual({ total: 1, no_leidas: 1 });
+  });
+
+  it("avisa al Soporte cuando responde el creador", async () => {
+    const { creador, soporte, responder } = await crearConversacion();
+
+    expect((await leer(soporte.body.token)).data).toHaveLength(0);
+    expect((await responder(creador.body.token, "<p>Sigue fallando</p>")).status).toBe(201);
+
+    const cuerpo = await leer(soporte.body.token);
+
+    expect(cuerpo.data).toHaveLength(1);
+    expect(cuerpo.data[0]?.mensaje).toContain("Nuevo mensaje de");
+  });
+
+  it("no avisa al Soporte que toma el ticket", async () => {
+    const soporte = await crearOtroUsuario("Soporte");
+    const creador = await crearOtroUsuario();
+    const ticketId = await crearTicket(creador.body.token);
+
+    const asignado = await request(app)
+      .post(`/api/v1/tickets/${ticketId}/asignar`)
+      .set("Authorization", `Bearer ${soporte.body.token}`)
+      .send({ asignado_a_id: soporte.body.usuario.id });
+
+    expect(asignado.status).toBe(200);
+    expect((await leer(soporte.body.token)).data).toHaveLength(0);
+  });
+
+  it("filtra las no leídas y marca una como leída", async () => {
+    const { creador, soporte, responder } = await crearConversacion();
+    await responder(soporte.body.token, "<p>Primera respuesta</p>");
+
+    const pendientes = await leer(creador.body.token, "?no_leidas=true");
+    const notificacion = pendientes.data[0];
+
+    expect(notificacion).toBeDefined();
+
+    const marcada = await request(app)
+      .patch(`/api/v1/notificaciones/${notificacion?.id}/leida`)
+      .set("Authorization", `Bearer ${creador.body.token}`);
+
+    expect(marcada.status).toBe(200);
+
+    const despues = await leer(creador.body.token, "?no_leidas=true");
+
+    expect(despues.data).toHaveLength(0);
+    expect(despues.meta.no_leidas).toBe(0);
+  });
+
+  it("marca todas las notificaciones como leídas", async () => {
+    const { creador, soporte, responder } = await crearConversacion();
+
+    await responder(soporte.body.token, "<p>Uno</p>");
+    await responder(soporte.body.token, "<p>Dos</p>");
+
+    expect((await leer(creador.body.token)).meta).toEqual({ total: 2, no_leidas: 2 });
+
+    const respuesta = await request(app)
+      .patch("/api/v1/notificaciones/leidas")
+      .set("Authorization", `Bearer ${creador.body.token}`);
+
+    expect(respuesta.status).toBe(200);
+    expect(getBody<{ data: { actualizadas: number } }>(respuesta).data.actualizadas).toBe(2);
+    expect((await leer(creador.body.token)).meta).toEqual({ total: 2, no_leidas: 0 });
+  });
+
+  it("rechaza la consulta sin sesión", async () => {
+    const respuesta = await request(app).get("/api/v1/notificaciones");
+
+    expect(respuesta.status).toBe(401);
+  });
+});
+
+describe("API tickets cerrados", () => {
+  const cerrarTicket = async (token: string, ticketId: string) =>
+    request(app)
+      .patch(`/api/v1/tickets/${ticketId}/estado`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ estado: "Cerrado" });
+
+  it("rechaza mensajes de ambos lados cuando el ticket está cerrado", async () => {
+    const creador = await crearOtroUsuario();
+    const soporte = await crearOtroUsuario("Soporte");
+    const admin = await login("admin@example.com", "admin123");
+    const ticketId = await crearTicket(creador.body.token);
+
+    await request(app)
+      .post(`/api/v1/tickets/${ticketId}/asignar`)
+      .set("Authorization", `Bearer ${soporte.body.token}`)
+      .send({ asignado_a_id: soporte.body.usuario.id });
+
+    expect((await cerrarTicket(admin.body.token, ticketId)).status).toBe(200);
+
+    const delCreador = await request(app)
+      .post(`/api/v1/tickets/${ticketId}/mensajes`)
+      .set("Authorization", `Bearer ${creador.body.token}`)
+      .send({ mensaje: "<p>Mensaje tardío</p>" });
+
+    const delSoporte = await request(app)
+      .post(`/api/v1/tickets/${ticketId}/mensajes`)
+      .set("Authorization", `Bearer ${soporte.body.token}`)
+      .send({ mensaje: "<p>Mensaje tardío</p>" });
+
+    expect(delCreador.status).toBe(400);
+    expect(delSoporte.status).toBe(400);
+  });
+
+  it("rechaza adjuntos en un ticket cerrado", async () => {
+    const creador = await crearOtroUsuario();
+    const admin = await login("admin@example.com", "admin123");
+    const ticketId = await crearTicket(creador.body.token);
+
+    expect((await cerrarTicket(admin.body.token, ticketId)).status).toBe(200);
+
+    const subida = await request(app)
+      .post(`/api/v1/tickets/${ticketId}/adjuntos`)
+      .set("Authorization", `Bearer ${creador.body.token}`)
+      .attach("archivo", Buffer.from([0x89, 0x50, 0x4e, 0x47]), {
+        filename: "tarde.png",
+        contentType: "image/png",
+      });
+
+    expect(subida.status).toBe(400);
   });
 });

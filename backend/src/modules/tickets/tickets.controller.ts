@@ -6,6 +6,7 @@ import {
   cambiarEstadoSchema,
   crearMensajeSchema,
   crearTicketSchema,
+  listarNotificacionesQuerySchema,
   listarTicketsQuerySchema,
 } from "./tickets.schema";
 import { TicketsService } from "./tickets.service";
@@ -231,11 +232,33 @@ export class TicketsController {
   }
 
   static async obtenerNotificaciones(req: Request, res: Response) {
-    const notificaciones = await ticketsService.obtenerNotificaciones(obtenerUsuario(req));
+    const validation = listarNotificacionesQuerySchema.safeParse(req.query);
+
+    if (!validation.success) {
+      return res.status(400).json({
+        error: "Parámetros de consulta inválidos",
+        issues: validation.error.issues,
+      });
+    }
+
+    const { data, meta } = await ticketsService.obtenerNotificaciones(
+      obtenerUsuario(req),
+      validation.data
+    );
 
     return res.status(200).json({
       message: "Notificaciones obtenidas con éxito",
-      data: notificaciones,
+      data,
+      meta,
+    });
+  }
+
+  static async marcarTodasLasNotificacionesLeidas(req: Request, res: Response) {
+    const actualizadas = await ticketsService.marcarTodasLeidas(obtenerUsuario(req));
+
+    return res.status(200).json({
+      message: "Notificaciones marcadas como leídas",
+      data: { actualizadas },
     });
   }
 

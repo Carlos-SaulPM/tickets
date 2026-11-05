@@ -48,11 +48,14 @@ Implementado:
 - Tickets: crear, listar, ver, asignar, editar y cerrar.
 - Mensajes, notas internas y propuestas de solución.
 - Aprobar/rechazar propuesta.
-- Historial y notificaciones in-app.
+- Historial y notificaciones in-app, con campana en la navbar y página `/notificaciones`.
+- Correo de cada aviso vía SMTP; en desarrollo lo captura Mailpit (`http://localhost:8025`).
+- Avisos por evento: crear un ticket no notifica; el creador recibe correo cuando Soporte responde, propone o cierra; el Soporte asignado recibe al asignarle el ticket y cuando el creador responde. Las notas internas no avisan. El Administrador ve la campana pero no recibe correo.
 - Áreas filtrables por estado (`?activo=true|false|all`).
 - UI de tickets: listado con filtros y paginación, creación y detalle con timeline de actividad.
 - Timeline del ticket: creación, cambios de estado, reasignación, prioridad y mensajes en orden cronológico.
-- Aprobar o rechazar la propuesta de solución desde el detalle.
+- Aprobar la solución cierra el ticket; rechazarla lo devuelve a En proceso.
+- Un ticket cerrado o resuelto no admite mensajes ni adjuntos nuevos (400 en la API).
 - Editor enriquecido en las respuestas (negrita, cursiva, títulos, listas, enlaces).
 - Adjuntos de imagen por mensaje (hasta 5 de 5 MB), con texto alternativo: botón, pegar o arrastrar varias a la vez.
 - El mensaje solo enlaza las imágenes que siguen visibles en el editor: si borras una, no se envía.
@@ -66,7 +69,7 @@ Implementado:
 
 Pendiente:
 
-- UI de notificaciones, catálogos y asignación/propuesta desde el navegador.
+- UI de catálogos.
 - Visibilidad de Soporte por área: el schema no relaciona usuarios con áreas; hoy Soporte ve tickets sin asignar o asignados a él.
 - Cierre automático por inactividad: fuera de alcance por ahora (proyecto escolar).
 
@@ -82,12 +85,27 @@ docker compose exec app pnpm db:demo:limpiar        # solo borra
 
 O pon `SEED_DEMO=true` en `.env` y el servicio `migrate` los carga en cada `docker compose up`. **No lo actives en producción** y ten en cuenta que cada `up` borra y recrea los datos de demostración.
 
-Cuentas nuevas (contraseña `demo123`):
+Todas las cuentas de demostración usan la contraseña `demo123`:
 
-| Rol     | Correos                                                                                    |
-| ------- | ------------------------------------------------------------------------------------------ |
-| Soporte | `soporte2@demo.local`, `soporte3@demo.local`, `soporte4@demo.local`, `soporte5@demo.local` |
-| Usuario | `usuario2@demo.local` … `usuario12@demo.local`                                             |
+| Nombre                | Correo                  | Contraseña | Rol     |
+| --------------------- | ----------------------- | ---------- | ------- |
+| Laura Méndez Ruiz     | `soporte2@demo.local`   | `demo123`  | Soporte |
+| Iván Ramírez Soto     | `soporte3@demo.local`   | `demo123`  | Soporte |
+| Nadia Cortés Bravo    | `soporte4@demo.local`   | `demo123`  | Soporte |
+| Emilio Fuentes Lara   | `soporte5@demo.local`   | `demo123`  | Soporte |
+| Mariana Ortiz Peña    | `usuario2@demo.local`   | `demo123`  | Usuario |
+| Diego Salas Núñez     | `usuario3@demo.local`   | `demo123`  | Usuario |
+| Paola Vega Herrera    | `usuario4@demo.local`   | `demo123`  | Usuario |
+| Andrés Lima Castro    | `usuario5@demo.local`   | `demo123`  | Usuario |
+| Sofía Ríos Delgado    | `usuario6@demo.local`   | `demo123`  | Usuario |
+| Héctor Cano Mejía     | `usuario7@demo.local`   | `demo123`  | Usuario |
+| Lucía Paredes Rangel  | `usuario8@demo.local`   | `demo123`  | Usuario |
+| Raúl Ibarra Solís     | `usuario9@demo.local`   | `demo123`  | Usuario |
+| Elena Mora Quintero   | `usuario10@demo.local`  | `demo123`  | Usuario |
+| Tomás Aguilar Pineda  | `usuario11@demo.local`  | `demo123`  | Usuario |
+| Renata Solís Márquez  | `usuario12@demo.local`  | `demo123`  | Usuario |
+
+Las cuentas base (`admin@example.com`, `soporte@example.com`, `usuario@example.com`) siguen disponibles con sus contraseñas de la tabla de arriba.
 
 Tickets `#D-001` … `#D-060`:
 
@@ -146,7 +164,8 @@ Abierto → En_proceso → En_revision → Resuelto → Cerrado
 | `GET`    | `/api/v1/tickets/:id/historial`    | JWT                              |
 | `POST`   | `/api/v1/tickets/:id/adjuntos`     | JWT (autorizado en el ticket)    |
 | `GET`    | `/api/v1/adjuntos/:id`             | JWT (autorizado en el ticket)    |
-| `GET`    | `/api/v1/notificaciones`           | JWT                              |
+| `GET`    | `/api/v1/notificaciones`           | JWT (`limite`, `no_leidas`)      |
+| `PATCH`  | `/api/v1/notificaciones/leidas`    | JWT                              |
 | `PATCH`  | `/api/v1/notificaciones/:id/leida` | JWT                              |
 | `GET`    | `/api/v1/holamundo`                | Público                          |
 
@@ -290,6 +309,14 @@ Para 80/443 usa un reverse proxy (nginx, Caddy, Traefik).
 | `NEXT_PUBLIC_API_URL` | `http://localhost:3000/api/v1` | URL del backend para el navegador                |
 | `API_URL_INTERNA`     | `http://app:3000/api/v1`       | URL del backend para SSR                         |
 | `UPLOADS_DIR`         | `./uploads`                    | Carpeta de imágenes en el backend                |
+| `FRONTEND_URL`        | `http://localhost:3001`        | Base de los enlaces en los correos               |
+| `SMTP_HOST`           | `mailpit` (dev)                | Servidor SMTP; vacío desactiva el envío real     |
+| `SMTP_PORT`           | `1025`                         | Puerto SMTP                                      |
+| `SMTP_SECURE`         | `false`                        | `true` para TLS implícito (puerto 465)           |
+| `SMTP_USER`           | —                              | Usuario SMTP                                     |
+| `SMTP_PASS`           | —                              | Contraseña SMTP                                  |
+| `SMTP_FROM`           | `Sistema de Tickets <…>`       | Remitente de los correos                         |
+| `MAILPIT_PORT`        | `8025`                         | Bandeja de Mailpit en el host                    |
 | `SEED_DEMO`           | `false`                        | Carga 60 tickets y 15 usuarios demo en cada `up` |
 | `APP_PORT`            | `3000`                         | Backend dev                                      |
 | `FRONTEND_PORT`       | `3001`                         | Frontend dev                                     |
@@ -301,6 +328,7 @@ Para 80/443 usa un reverse proxy (nginx, Caddy, Traefik).
 ## Notas
 
 - El nombre visible del sistema y su descripción viven en `frontend/tickets_frontend/lib/marca.ts`. Cámbialos por los del cliente y se actualizan el login, la barra de navegación y el título de la pestaña.
+- Los correos se capturan en Mailpit durante el desarrollo: bandeja en <http://localhost:8025>. En producción configura `SMTP_*` con tu proveedor; si `SMTP_HOST` queda vacío, los avisos solo se registran en consola y la operación continúa igual.
 - No edites archivos dentro de los contenedores; edita en el repo.
 - Esta versión reemplaza el esquema anterior. Si tienes el volumen `pgdata` viejo, ejecuta `docker compose down -v` una vez antes de arrancar.
 - `node_modules`, `src/generated` y `.next` son artefactos. Las imágenes subidas viven en el volumen `uploads`, no en el repo.

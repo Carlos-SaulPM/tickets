@@ -127,6 +127,12 @@ export interface Notificacion {
   mensaje: string;
   leida: boolean;
   creado_en: Date;
+  ticket: {
+    id: string;
+    codigo: string;
+    asunto: string;
+    estado: EstadoTicket;
+  } | null;
 }
 
 export interface AdjuntoConTicket extends Adjunto {

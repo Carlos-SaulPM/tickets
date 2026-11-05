@@ -34,11 +34,11 @@ export default async function TicketDetailPage({ params }: { params: Promise<{ i
   const asignacion = [...eventos].reverse().find(evento => evento.clase === "reasignacion");
   const esCreador = sesion.usuario.id === ticket.usuario_creador.id;
   const esperaRespuesta = esCreador && ticket.estado === "En_revision";
-  const cerrado = ticket.estado === "Cerrado";
+  const finalizado = ticket.estado === "Cerrado" || ticket.estado === "Resuelto";
   const asignadoA = ticket.asignado_a?.id ?? null;
   const atiendeSoporte = esSoporte && asignadoA === sesion.usuario.id;
   const asignable = ticket.estado === "Abierto" || ticket.estado === "En_proceso";
-  const puedeResponder = !cerrado && (!esSoporte || atiendeSoporte);
+  const puedeResponder = !finalizado && (!esSoporte || atiendeSoporte);
   const puedeProponer = atiendeSoporte && ticket.estado === "En_proceso";
 
   return (
@@ -85,9 +85,10 @@ export default async function TicketDetailPage({ params }: { params: Promise<{ i
             </h2>
             <TimelineTicket eventos={eventos} />
 
-            {cerrado ? (
+            {finalizado ? (
               <p className="text-muted-foreground rounded-lg border border-dashed px-4 py-6 text-center text-sm">
-                El ticket está cerrado. No admite respuestas nuevas.
+                El ticket está {ticket.estado === "Cerrado" ? "cerrado" : "resuelto"}. No admite
+                respuestas nuevas.
               </p>
             ) : puedeResponder ? (
               <CompositorMensajes ticketId={ticket.id} puedeProponer={puedeProponer} />

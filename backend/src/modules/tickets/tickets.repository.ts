@@ -90,6 +90,14 @@ const notificacionSelect = {
   mensaje: true,
   leida: true,
   creado_en: true,
+  ticket: {
+    select: {
+      id: true,
+      codigo: true,
+      asunto: true,
+      estado: true,
+    },
+  },
 } satisfies Prisma.NotificacionSelect;
 
 export class TicketRepository {
@@ -248,11 +256,28 @@ export class TicketRepository {
     });
   }
 
-  buscarNotificaciones(usuario_id: string): Promise<Notificacion[]> {
+  buscarNotificaciones(
+    usuario_id: string,
+    filtros: { limite: number; soloNoLeidas: boolean }
+  ): Promise<Notificacion[]> {
     return prisma.notificacion.findMany({
-      where: { usuario_id },
+      where: { usuario_id, ...(filtros.soloNoLeidas ? { leida: false } : {}) },
       select: notificacionSelect,
       orderBy: { creado_en: "desc" },
+      take: filtros.limite,
+    });
+  }
+
+  contarNotificaciones(usuario_id: string, soloNoLeidas = false): Promise<number> {
+    return prisma.notificacion.count({
+      where: { usuario_id, ...(soloNoLeidas ? { leida: false } : {}) },
+    });
+  }
+
+  marcarTodasLeidas(usuario_id: string): Promise<Prisma.BatchPayload> {
+    return prisma.notificacion.updateMany({
+      where: { usuario_id, leida: false },
+      data: { leida: true },
     });
   }
 

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
+import { CampanaNotificaciones } from "@/components/notificaciones/campana-notificaciones";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -53,6 +54,7 @@ export function Navbar() {
         <div className="flex items-center gap-3">
           {sesion ? (
             <>
+              <CampanaNotificaciones />
               <div className="hidden items-center gap-2 sm:flex">
                 <span className="text-sm font-medium">{sesion.usuario.nombre}</span>
                 <Badge variant={sesion.usuario.rol === "Administrador" ? "default" : "secondary"}>

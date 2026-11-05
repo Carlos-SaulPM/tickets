@@ -6,6 +6,7 @@ import {
   TipoEventoHistorial,
 } from "@/generated/prisma/enums";
 import { correoService } from "@/services/correo/correo.service";
+import type { PlantillaCorreo } from "@/services/correo/tipos";
 import type { UsuarioAutenticado } from "@/types/autenticacion.types";
 import { ApiError } from "@/utils/api-error";
 import { sanitizarHtml } from "@/utils/sanitizar-html";
@@ -16,6 +17,7 @@ import type {
   ActualizarTicketInput,
   CrearMensajeInput,
   CrearTicketInput,
+  ListarNotificacionesQuery,
   ListarTicketsQuery,
 } from "./tickets.schema";
 import type { Ticket, TicketMensaje, TicketUsuarioResumen } from "./tickets.types";
@@ -111,7 +113,7 @@ export class TicketsService {
     destinatario: TicketUsuarioResumen,
     ticket: Ticket,
     mensaje: string,
-    plantilla: "TICKET_CREADO" | "SOLUCION_PROPUESTA" | "ESTADO_CAMBIADO"
+    plantilla: PlantillaCorreo
   ): Promise<void> {
     await this.repository.crearNotificacion({
       usuario_id: destinatario.id,
@@ -119,11 +121,15 @@ export class TicketsService {
       mensaje,
     });
 
+    const cuenta = await this.repository.buscarUsuarioPorId(destinatario.id);
+
+    if (cuenta?.rol.nombre === NombreRol.Administrador) return;
+
     await correoService.enviarCorreo({
       destinatario: destinatario.correo_electronico,
       asunto: `${ticket.codigo}: ${ticket.asunto}`,
       plantilla,
-      datos: { ticket: ticket.codigo, mensaje },
+      datos: { ticket: ticket.codigo, ticket_id: ticket.id, mensaje },
     });
   }
 
@@ -192,8 +198,6 @@ export class TicketsService {
       estado_nuevo: EstadoTicket.Abierto,
       detalle: "Ticket creado",
     });
-
-    await this.notificar(ticket.usuario_creador, ticket, "Tu ticket fue creado", "TICKET_CREADO");
 
     return ticket;
   }
@@ -272,7 +276,9 @@ export class TicketsService {
       detalle: `Ticket asignado a ${destino.nombre} ${destino.apellido_paterno}`,
     });
 
-    await this.notificar(destino, updated, "Se te asignó un ticket", "ESTADO_CAMBIADO");
+    if (destino.id !== usuario.id) {
+      await this.notificar(destino, updated, "Se te asignó un ticket", "ESTADO_CAMBIADO");
+    }
 
     return updated;
   }
@@ -343,6 +349,10 @@ export class TicketsService {
   ): Promise<TicketMensaje> {
     const ticket = await this.getTicketPermitido(id, usuario);
 
+    if (ticket.estado === EstadoTicket.Cerrado || ticket.estado === EstadoTicket.Resuelto) {
+      throw new ApiError(400, "El ticket está cerrado y no admite mensajes");
+    }
+
     if (usuario.rol === NombreRol.Soporte && ticket.asignado_a?.id !== usuario.id) {
       throw new ApiError(403, "Toma el ticket antes de responder");
     }
@@ -411,12 +421,26 @@ export class TicketsService {
         detalle: "Solución propuesta al usuario",
       });
 
-      await this.notificar(
-        ticket.usuario_creador,
-        updated,
-        "Se propuso una solución a tu ticket",
-        "SOLUCION_PROPUESTA"
-      );
+      if (ticket.usuario_creador.id !== usuario.id) {
+        await this.notificar(
+          ticket.usuario_creador,
+          updated,
+          "Se propuso una solución a tu ticket",
+          "SOLUCION_PROPUESTA"
+        );
+      }
+    } else if (!esNotaInterna) {
+      const destinatario =
+        usuario.rol === NombreRol.Usuario ? ticket.asignado_a : ticket.usuario_creador;
+
+      if (destinatario && destinatario.id !== usuario.id) {
+        await this.notificar(
+          destinatario,
+          ticket,
+          `Nuevo mensaje de ${usuario.nombre}`,
+          "MENSAJE_NUEVO"
+        );
+      }
     }
 
     return mensajeConAdjuntos ?? mensaje;
@@ -433,7 +457,7 @@ export class TicketsService {
       throw new ApiError(400, "El ticket no está en revisión");
     }
 
-    const updated = await this.repository.updateEstado(id, EstadoTicket.Resuelto, new Date());
+    const updated = await this.repository.updateEstado(id, EstadoTicket.Cerrado, new Date());
 
     await this.repository.crearHistorial({
       ticket_id: ticket.id,
@@ -441,14 +465,14 @@ export class TicketsService {
       tipo_evento: TipoEventoHistorial.CAMBIO_ESTADO,
       estado_anterior: ticket.estado,
       estado_nuevo: updated.estado,
-      detalle: "Solución aprobada por el usuario",
+      detalle: "Solución aprobada; ticket cerrado",
     });
 
     if (updated.asignado_a) {
       await this.notificar(
         updated.asignado_a,
         updated,
-        "El usuario aprobó la solución",
+        "El usuario aprobó la solución y el ticket se cerró",
         "ESTADO_CAMBIADO"
       );
     }
@@ -495,8 +519,23 @@ export class TicketsService {
     return this.repository.buscarHistorial(id);
   }
 
-  async obtenerNotificaciones(usuario: UsuarioAutenticado) {
-    return this.repository.buscarNotificaciones(usuario.id);
+  async obtenerNotificaciones(usuario: UsuarioAutenticado, filtros: ListarNotificacionesQuery) {
+    const [data, total, noLeidas] = await Promise.all([
+      this.repository.buscarNotificaciones(usuario.id, {
+        limite: filtros.limite,
+        soloNoLeidas: filtros.no_leidas,
+      }),
+      this.repository.contarNotificaciones(usuario.id),
+      this.repository.contarNotificaciones(usuario.id, true),
+    ]);
+
+    return { data, meta: { total, no_leidas: noLeidas } };
+  }
+
+  async marcarTodasLeidas(usuario: UsuarioAutenticado) {
+    const { count } = await this.repository.marcarTodasLeidas(usuario.id);
+
+    return count;
   }
 
   async marcarNotificacionLeida(id: string, usuario: UsuarioAutenticado): Promise<void> {

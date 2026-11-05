@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { join } from "node:path";
 
+import { EstadoTicket } from "@/generated/prisma/enums";
 import type { UsuarioAutenticado } from "@/types/autenticacion.types";
 import { ApiError } from "@/utils/api-error";
 
@@ -27,6 +28,10 @@ export class AdjuntosService {
 
     if (!puedeVerTicket(ticket, usuario)) {
       throw new ApiError(403, "No tienes acceso a este ticket");
+    }
+
+    if (ticket.estado === EstadoTicket.Cerrado || ticket.estado === EstadoTicket.Resuelto) {
+      throw new ApiError(400, "El ticket está cerrado y no admite adjuntos");
     }
 
     const id = randomUUID();

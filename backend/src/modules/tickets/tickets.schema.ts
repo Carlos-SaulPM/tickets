@@ -36,6 +36,14 @@ export const listarTicketsQuerySchema = z.object({
   limite: z.coerce.number().int().min(1).max(100).default(20),
 });
 
+export const listarNotificacionesQuerySchema = z.object({
+  limite: z.coerce.number().int().min(1).max(100).default(20),
+  no_leidas: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform(valor => valor === "true"),
+});
+
 export const crearMensajeSchema = z
   .object({
     mensaje: z.string().trim().min(1).max(20_000),
@@ -53,3 +61,4 @@ export type AsignarTicketInput = z.infer<typeof asignarTicketSchema>;
 export type CrearMensajeInput = z.infer<typeof crearMensajeSchema>;
 export type CambiarEstadoInput = z.infer<typeof cambiarEstadoSchema>;
 export type ListarTicketsQuery = z.infer<typeof listarTicketsQuerySchema>;
+export type ListarNotificacionesQuery = z.infer<typeof listarNotificacionesQuerySchema>;
