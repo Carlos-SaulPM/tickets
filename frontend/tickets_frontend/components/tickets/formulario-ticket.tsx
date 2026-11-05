@@ -1,6 +1,5 @@
 "use client";
 
-import { useLayoutEffect } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
@@ -56,8 +55,6 @@ export function FormularioTicket({
       prioridad: "Media",
     },
   });
-
-  useLayoutEffect(() => reset, [reset]);
 
   const categoriaId = useWatch({ control, name: "categoria_id" });
   const areaId = useWatch({ control, name: "area_id" });

@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { Navbar } from "@/components/layout/Navbar";
+import { Navbar } from "@/components/layout/navbar";
 import { FiltrosTickets } from "@/components/tickets/filtros-tickets";
 import { PaginacionTickets } from "@/components/tickets/paginacion-tickets";
 import { TablaTickets } from "@/components/tickets/tabla-tickets";

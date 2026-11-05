@@ -45,7 +45,7 @@ export function CampanaNotificaciones() {
   useEffect(() => {
     if (!sesion) return;
 
-    // La primera carga se difiere al siguiente tick para no encadenar renders durante el montaje.
+    // Se difiere al siguiente tick para no encadenar renders durante el montaje.
     queueMicrotask(() => void cargar());
 
     const intervalo = setInterval(() => void cargar(), INTERVALO_MS);

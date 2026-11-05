@@ -6,45 +6,29 @@ import type {
   TicketMensaje,
 } from "@/types/ticket.types";
 
+const pedirTicket = (path: string, metodo: string) =>
+  apiFetch<{ data: Ticket }>(path, { method: metodo }).then(respuesta => respuesta.data);
+
 export const ticketsService = {
-  async crear(data: CrearTicketInput) {
-    const response = await apiFetch<{ data: Ticket }>("/tickets", {
+  crear: (datos: CrearTicketInput) =>
+    apiFetch<{ data: Ticket }>("/tickets", {
       method: "POST",
-      body: JSON.stringify(data),
-    });
+      body: JSON.stringify(datos),
+    }).then(respuesta => respuesta.data),
 
-    return response.data;
-  },
-
-  async agregarMensaje(id: string, data: CrearMensajeInput) {
-    const response = await apiFetch<{ data: TicketMensaje }>(`/tickets/${id}/mensajes`, {
+  agregarMensaje: (id: string, datos: CrearMensajeInput) =>
+    apiFetch<{ data: TicketMensaje }>(`/tickets/${id}/mensajes`, {
       method: "POST",
-      body: JSON.stringify(data),
-    });
+      body: JSON.stringify(datos),
+    }).then(respuesta => respuesta.data),
 
-    return response.data;
-  },
-
-  async asignar(id: string, asignado_a_id: string) {
-    const response = await apiFetch<{ data: Ticket }>(`/tickets/${id}/asignar`, {
+  asignar: (id: string, asignado_a_id: string) =>
+    apiFetch<{ data: Ticket }>(`/tickets/${id}/asignar`, {
       method: "POST",
       body: JSON.stringify({ asignado_a_id }),
-    });
+    }).then(respuesta => respuesta.data),
 
-    return response.data;
-  },
+  aprobar: (id: string) => pedirTicket(`/tickets/${id}/aprobar`, "POST"),
 
-  async aprobar(id: string) {
-    const response = await apiFetch<{ data: Ticket }>(`/tickets/${id}/aprobar`, { method: "POST" });
-
-    return response.data;
-  },
-
-  async rechazar(id: string) {
-    const response = await apiFetch<{ data: Ticket }>(`/tickets/${id}/rechazar`, {
-      method: "POST",
-    });
-
-    return response.data;
-  },
+  rechazar: (id: string) => pedirTicket(`/tickets/${id}/rechazar`, "POST"),
 };

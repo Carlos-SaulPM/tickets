@@ -18,31 +18,35 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Usuario } from "@/types/usuario.types";
+import type { Usuario } from "@/types/usuario.types";
+
+const TODOS = "todos";
+const POR_PAGINA = 5;
 
 interface TablaUsuariosProps {
-  users: Usuario[];
-  onEdit: (user: Usuario) => void;
-  onDelete: (id: string) => void;
-  onOpenCreate: () => void;
+  usuarios: Usuario[];
+  alEditar: (usuario: Usuario) => void;
+  alEliminar: (id: string) => void;
+  alCrear: () => void;
 }
 
-export function TablaUsuarios({ users, onEdit, onDelete, onOpenCreate }: TablaUsuariosProps) {
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [page, setPage] = useState(1);
-  const pageSize = 5;
+export function TablaUsuarios({ usuarios, alEditar, alEliminar, alCrear }: TablaUsuariosProps) {
+  const [busqueda, setBusqueda] = useState("");
+  const [filtroEstado, setFiltroEstado] = useState(TODOS);
+  const [pagina, setPagina] = useState(1);
 
-  const filteredUsers = users.filter(user => {
-    const matchesSearch =
-      user.nombre.toLowerCase().includes(search.toLowerCase()) ||
-      user.correo_electronico.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = statusFilter === "all" || user.estado === statusFilter;
-    return matchesSearch && matchesStatus;
+  const usuariosFiltrados = usuarios.filter(usuario => {
+    const texto = busqueda.toLowerCase();
+
+    return (
+      (usuario.nombre.toLowerCase().includes(texto) ||
+        usuario.correo_electronico.toLowerCase().includes(texto)) &&
+      (filtroEstado === TODOS || usuario.estado === filtroEstado)
+    );
   });
 
-  const totalPages = Math.ceil(filteredUsers.length / pageSize) || 1;
-  const paginatedUsers = filteredUsers.slice((page - 1) * pageSize, page * pageSize);
+  const totalPaginas = Math.ceil(usuariosFiltrados.length / POR_PAGINA) || 1;
+  const visibles = usuariosFiltrados.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA);
 
   return (
     <div className="space-y-4">
@@ -50,32 +54,32 @@ export function TablaUsuarios({ users, onEdit, onDelete, onOpenCreate }: TablaUs
         <div className="flex max-w-sm flex-1 items-center gap-2">
           <Input
             placeholder="Buscar por nombre o correo..."
-            value={search}
-            onChange={e => {
-              setSearch(e.target.value);
-              setPage(1);
+            value={busqueda}
+            onChange={evento => {
+              setBusqueda(evento.target.value);
+              setPagina(1);
             }}
           />
         </div>
         <div className="flex items-center gap-2">
           <Select
-            value={statusFilter}
-            onValueChange={val => {
-              setStatusFilter(val);
-              setPage(1);
+            value={filtroEstado}
+            onValueChange={valor => {
+              setFiltroEstado(valor);
+              setPagina(1);
             }}
           >
             <SelectTrigger className="w-[150px]">
               <SelectValue placeholder="Estado" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value={TODOS}>Todos</SelectItem>
               <SelectItem value="Activo">Activo</SelectItem>
               <SelectItem value="Inactivo">Inactivo</SelectItem>
               <SelectItem value="Baja">Baja</SelectItem>
             </SelectContent>
           </Select>
-          <Button onClick={onOpenCreate}>Nuevo Usuario</Button>
+          <Button onClick={alCrear}>Nuevo usuario</Button>
         </div>
       </div>
 
@@ -84,39 +88,41 @@ export function TablaUsuarios({ users, onEdit, onDelete, onOpenCreate }: TablaUs
           <TableHeader>
             <TableRow>
               <TableHead>Nombre</TableHead>
-              <TableHead>Email</TableHead>
+              <TableHead>Correo</TableHead>
               <TableHead>Rol</TableHead>
               <TableHead>Estado</TableHead>
               <TableHead className="text-right">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedUsers.length === 0 ? (
+            {visibles.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-muted-foreground py-6 text-center">
                   No se encontraron usuarios.
                 </TableCell>
               </TableRow>
             ) : (
-              paginatedUsers.map(user => (
-                <TableRow key={user.id}>
-                  <TableCell className="font-medium">{`${user.nombre} ${user.apellido_paterno}`}</TableCell>
-                  <TableCell>{user.correo_electronico}</TableCell>
-                  <TableCell>{user.rol.nombre}</TableCell>
+              visibles.map(usuario => (
+                <TableRow key={usuario.id}>
+                  <TableCell className="font-medium">
+                    {usuario.nombre} {usuario.apellido_paterno}
+                  </TableCell>
+                  <TableCell>{usuario.correo_electronico}</TableCell>
+                  <TableCell>{usuario.rol.nombre}</TableCell>
                   <TableCell>
-                    <Badge variant={user.estado === "Activo" ? "default" : "secondary"}>
-                      {user.estado}
+                    <Badge variant={usuario.estado === "Activo" ? "default" : "secondary"}>
+                      {usuario.estado}
                     </Badge>
                   </TableCell>
                   <TableCell className="space-x-2 text-right">
-                    <Button size="sm" variant="outline" onClick={() => onEdit(user)}>
+                    <Button size="sm" variant="outline" onClick={() => alEditar(usuario)}>
                       Editar
                     </Button>
                     <Button
                       size="sm"
                       variant="destructive"
-                      disabled={user.estado === "Baja"}
-                      onClick={() => onDelete(user.id)}
+                      disabled={usuario.estado === "Baja"}
+                      onClick={() => alEliminar(usuario.id)}
                     >
                       Eliminar
                     </Button>
@@ -130,22 +136,22 @@ export function TablaUsuarios({ users, onEdit, onDelete, onOpenCreate }: TablaUs
 
       <div className="text-muted-foreground flex items-center justify-between text-sm">
         <span>
-          Página {page} de {totalPages}
+          Página {pagina} de {totalPaginas}
         </span>
         <div className="space-x-2">
           <Button
             size="sm"
             variant="outline"
-            disabled={page === 1}
-            onClick={() => setPage(page - 1)}
+            disabled={pagina === 1}
+            onClick={() => setPagina(pagina - 1)}
           >
             Anterior
           </Button>
           <Button
             size="sm"
             variant="outline"
-            disabled={page === totalPages}
-            onClick={() => setPage(page + 1)}
+            disabled={pagina === totalPaginas}
+            onClick={() => setPagina(pagina + 1)}
           >
             Siguiente
           </Button>

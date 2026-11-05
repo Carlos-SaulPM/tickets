@@ -1,5 +1,8 @@
 import type { Request, Response } from "express";
 
+import { obtenerUsuario, requerirId } from "@/utils/solicitud";
+import { validar } from "@/utils/validacion";
+
 import {
   actualizarTicketSchema,
   asignarTicketSchema,
@@ -10,22 +13,16 @@ import {
   listarTicketsQuerySchema,
 } from "./tickets.schema";
 import { TicketsService } from "./tickets.service";
-import { obtenerId, obtenerUsuario } from "./tickets.utils";
 
 const ticketsService = new TicketsService();
 
+const PARAMETROS_INVALIDOS = "Parámetros de consulta inválidos";
+
 export class TicketsController {
   static async listar(req: Request, res: Response) {
-    const validation = listarTicketsQuerySchema.safeParse(req.query);
+    const filtros = validar(listarTicketsQuerySchema, req.query, PARAMETROS_INVALIDOS);
 
-    if (!validation.success) {
-      return res.status(400).json({
-        error: "Parámetros de consulta inválidos",
-        issues: validation.error.issues,
-      });
-    }
-
-    const { tickets, meta } = await ticketsService.listar(obtenerUsuario(req), validation.data);
+    const { tickets, meta } = await ticketsService.listar(obtenerUsuario(req), filtros);
 
     return res.status(200).json({
       message: "Tickets obtenidos con éxito",
@@ -35,11 +32,7 @@ export class TicketsController {
   }
 
   static async obtenerPorId(req: Request, res: Response) {
-    const id = obtenerId(req.params);
-
-    if (!id) {
-      return res.status(400).json({ error: "El id no es válido o no existe" });
-    }
+    const id = requerirId(req.params);
 
     const ticket = await ticketsService.obtenerPorId(id, obtenerUsuario(req));
 
@@ -50,16 +43,8 @@ export class TicketsController {
   }
 
   static async crear(req: Request, res: Response) {
-    const validation = crearTicketSchema.safeParse(req.body);
-
-    if (!validation.success) {
-      return res.status(400).json({
-        error: "Datos de entrada inválidos",
-        issues: validation.error.issues,
-      });
-    }
-
-    const ticket = await ticketsService.crear(validation.data, obtenerUsuario(req));
+    const datos = validar(crearTicketSchema, req.body);
+    const ticket = await ticketsService.crear(datos, obtenerUsuario(req));
 
     return res.status(201).json({
       message: "Ticket creado correctamente",
@@ -68,22 +53,10 @@ export class TicketsController {
   }
 
   static async actualizar(req: Request, res: Response) {
-    const id = obtenerId(req.params);
+    const id = requerirId(req.params);
 
-    if (!id) {
-      return res.status(400).json({ error: "El id no es válido o no existe" });
-    }
-
-    const validation = actualizarTicketSchema.safeParse(req.body);
-
-    if (!validation.success) {
-      return res.status(400).json({
-        error: "Datos de entrada inválidos",
-        issues: validation.error.issues,
-      });
-    }
-
-    const ticket = await ticketsService.actualizar(id, validation.data, obtenerUsuario(req));
+    const datos = validar(actualizarTicketSchema, req.body);
+    const ticket = await ticketsService.actualizar(id, datos, obtenerUsuario(req));
 
     return res.status(200).json({
       message: "Ticket actualizado correctamente",
@@ -92,26 +65,10 @@ export class TicketsController {
   }
 
   static async asignar(req: Request, res: Response) {
-    const id = obtenerId(req.params);
+    const id = requerirId(req.params);
 
-    if (!id) {
-      return res.status(400).json({ error: "El id no es válido o no existe" });
-    }
-
-    const validation = asignarTicketSchema.safeParse(req.body);
-
-    if (!validation.success) {
-      return res.status(400).json({
-        error: "Datos de entrada inválidos",
-        issues: validation.error.issues,
-      });
-    }
-
-    const ticket = await ticketsService.asignar(
-      id,
-      validation.data.asignado_a_id,
-      obtenerUsuario(req)
-    );
+    const { asignado_a_id } = validar(asignarTicketSchema, req.body);
+    const ticket = await ticketsService.asignar(id, asignado_a_id, obtenerUsuario(req));
 
     return res.status(200).json({
       message: "Ticket asignado correctamente",
@@ -120,26 +77,10 @@ export class TicketsController {
   }
 
   static async cambiarEstado(req: Request, res: Response) {
-    const id = obtenerId(req.params);
+    const id = requerirId(req.params);
 
-    if (!id) {
-      return res.status(400).json({ error: "El id no es válido o no existe" });
-    }
-
-    const validation = cambiarEstadoSchema.safeParse(req.body);
-
-    if (!validation.success) {
-      return res.status(400).json({
-        error: "Datos de entrada inválidos",
-        issues: validation.error.issues,
-      });
-    }
-
-    const ticket = await ticketsService.cambiarEstado(
-      id,
-      validation.data.estado,
-      obtenerUsuario(req)
-    );
+    const { estado } = validar(cambiarEstadoSchema, req.body);
+    const ticket = await ticketsService.cambiarEstado(id, estado, obtenerUsuario(req));
 
     return res.status(200).json({
       message: "Estado del ticket actualizado correctamente",
@@ -148,11 +89,7 @@ export class TicketsController {
   }
 
   static async obtenerMensajes(req: Request, res: Response) {
-    const id = obtenerId(req.params);
-
-    if (!id) {
-      return res.status(400).json({ error: "El id no es válido o no existe" });
-    }
+    const id = requerirId(req.params);
 
     const mensajes = await ticketsService.obtenerMensajes(id, obtenerUsuario(req));
 
@@ -163,22 +100,10 @@ export class TicketsController {
   }
 
   static async agregarMensaje(req: Request, res: Response) {
-    const id = obtenerId(req.params);
+    const id = requerirId(req.params);
 
-    if (!id) {
-      return res.status(400).json({ error: "El id no es válido o no existe" });
-    }
-
-    const validation = crearMensajeSchema.safeParse(req.body);
-
-    if (!validation.success) {
-      return res.status(400).json({
-        error: "Datos de entrada inválidos",
-        issues: validation.error.issues,
-      });
-    }
-
-    const mensaje = await ticketsService.agregarMensaje(id, validation.data, obtenerUsuario(req));
+    const datos = validar(crearMensajeSchema, req.body);
+    const mensaje = await ticketsService.agregarMensaje(id, datos, obtenerUsuario(req));
 
     return res.status(201).json({
       message: "Mensaje creado correctamente",
@@ -187,11 +112,7 @@ export class TicketsController {
   }
 
   static async aprobar(req: Request, res: Response) {
-    const id = obtenerId(req.params);
-
-    if (!id) {
-      return res.status(400).json({ error: "El id no es válido o no existe" });
-    }
+    const id = requerirId(req.params);
 
     const ticket = await ticketsService.aprobar(id, obtenerUsuario(req));
 
@@ -202,11 +123,7 @@ export class TicketsController {
   }
 
   static async rechazar(req: Request, res: Response) {
-    const id = obtenerId(req.params);
-
-    if (!id) {
-      return res.status(400).json({ error: "El id no es válido o no existe" });
-    }
+    const id = requerirId(req.params);
 
     const ticket = await ticketsService.rechazar(id, obtenerUsuario(req));
 
@@ -217,11 +134,7 @@ export class TicketsController {
   }
 
   static async obtenerHistorial(req: Request, res: Response) {
-    const id = obtenerId(req.params);
-
-    if (!id) {
-      return res.status(400).json({ error: "El id no es válido o no existe" });
-    }
+    const id = requerirId(req.params);
 
     const historial = await ticketsService.obtenerHistorial(id, obtenerUsuario(req));
 
@@ -232,19 +145,9 @@ export class TicketsController {
   }
 
   static async obtenerNotificaciones(req: Request, res: Response) {
-    const validation = listarNotificacionesQuerySchema.safeParse(req.query);
+    const filtros = validar(listarNotificacionesQuerySchema, req.query, PARAMETROS_INVALIDOS);
 
-    if (!validation.success) {
-      return res.status(400).json({
-        error: "Parámetros de consulta inválidos",
-        issues: validation.error.issues,
-      });
-    }
-
-    const { data, meta } = await ticketsService.obtenerNotificaciones(
-      obtenerUsuario(req),
-      validation.data
-    );
+    const { data, meta } = await ticketsService.obtenerNotificaciones(obtenerUsuario(req), filtros);
 
     return res.status(200).json({
       message: "Notificaciones obtenidas con éxito",
@@ -263,11 +166,7 @@ export class TicketsController {
   }
 
   static async marcarNotificacionLeida(req: Request, res: Response) {
-    const id = obtenerId(req.params);
-
-    if (!id) {
-      return res.status(400).json({ error: "El id no es válido o no existe" });
-    }
+    const id = requerirId(req.params);
 
     await ticketsService.marcarNotificacionLeida(id, obtenerUsuario(req));
 

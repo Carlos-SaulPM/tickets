@@ -11,7 +11,6 @@ docker compose up -d --build
 
 - Frontend: <http://localhost:3001> (redirige a `/tickets` o a `/login` según la sesión)
 - API: <http://localhost:3000/api/v1>
-- Prueba API: <http://localhost:3000/api/v1/holamundo>
 
 ### Credenciales de prueba
 
@@ -28,6 +27,7 @@ El seed también crea el ticket `#TK-DEMO` con tres mensajes y cinco imágenes: 
 ## Cómo funciona
 
 - No hay registro público. Un administrador crea las cuentas.
+- `/tickets`, `/perfil` y `/users` se protegen en el servidor: sin sesión redirigen a `/login`.
 - Al crear un usuario, el backend genera una contraseña temporal y el frontend la muestra una sola vez.
 - Un administrador no puede eliminarse ni darse de baja a sí mismo.
 - El login devuelve un JWT. El frontend lo guarda y lo envía como `Authorization: Bearer`.
@@ -167,7 +167,6 @@ Abierto → En_proceso → En_revision → Resuelto → Cerrado
 | `GET`    | `/api/v1/notificaciones`           | JWT (`limite`, `no_leidas`)      |
 | `PATCH`  | `/api/v1/notificaciones/leidas`    | JWT                              |
 | `PATCH`  | `/api/v1/notificaciones/:id/leida` | JWT                              |
-| `GET`    | `/api/v1/holamundo`                | Público                          |
 
 Login:
 
@@ -221,7 +220,7 @@ Los filtros se combinan con la visibilidad del rol, así que un Usuario nunca ve
 │   │   └── seed.ts
 │   └── src/
 │       ├── modules/autenticacion/
-│       ├── modules/users/
+│       ├── modules/usuarios/
 │       ├── modules/roles/
 │       ├── middlewares/auth.middleware.ts
 │       ├── test/unit/

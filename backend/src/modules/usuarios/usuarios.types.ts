@@ -7,7 +7,7 @@ export interface RolUsuarioResumen {
   nombre: NombreRol;
 }
 
-export interface User {
+export interface Usuario {
   id: string;
   nombre: string;
   apellido_paterno: string;
@@ -20,10 +20,10 @@ export interface User {
 
 export interface CrearUsuarioDTO {
   data: CrearUsuarioInput;
-  requestedRole?: NombreRol | undefined;
+  rolSolicitante: NombreRol | undefined;
 }
 
-export interface CreateUsuariosRepositoryDTO {
+export interface CrearUsuarioRepositoryDTO {
   nombre: string;
   apellido_paterno: string;
   apellido_materno: string;
@@ -34,11 +34,11 @@ export interface CreateUsuariosRepositoryDTO {
 export interface ActualizarUsuarioDTO {
   id: string;
   data: ActualizarUsuarioInput;
-  requestedRole?: NombreRol | undefined;
-  requestedUserId?: string | undefined;
+  rolSolicitante: NombreRol | undefined;
+  idSolicitante: string | undefined;
 }
 
-export interface UpdateUsuariosRepositoryDTO {
+export interface ActualizarUsuarioRepositoryDTO {
   nombre?: string;
   apellido_paterno?: string;
   apellido_materno?: string;
@@ -48,6 +48,6 @@ export interface UpdateUsuariosRepositoryDTO {
 
 export interface EliminarUsuarioDTO {
   id: string;
-  requestedRole?: NombreRol | undefined;
-  requestedUserId?: string | undefined;
+  rolSolicitante: NombreRol | undefined;
+  idSolicitante: string | undefined;
 }

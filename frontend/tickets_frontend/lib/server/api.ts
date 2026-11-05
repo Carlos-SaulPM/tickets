@@ -4,7 +4,7 @@ import { ApiError, apiRequest } from "@/lib/api";
 
 import { requerirSesion } from "./sesion";
 
-const SERVER_API_BASE_URL = (
+export const SERVER_API_BASE_URL = (
   process.env.API_URL_INTERNA ||
   process.env.NEXT_PUBLIC_API_URL ||
   "http://localhost:3000/api/v1"

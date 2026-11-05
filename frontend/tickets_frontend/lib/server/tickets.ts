@@ -13,9 +13,9 @@ import type {
 import { fetchConSesion } from "./api";
 
 export const obtenerTickets = (query: ConsultaTickets) => {
-  const search = construirConsultaTickets(query);
+  const consulta = construirConsultaTickets(query);
 
-  return fetchConSesion<PaginaTickets>(`/tickets${search ? `?${search}` : ""}`);
+  return fetchConSesion<PaginaTickets>(`/tickets${consulta ? `?${consulta}` : ""}`);
 };
 
 export const obtenerTicket = async (id: string) => {

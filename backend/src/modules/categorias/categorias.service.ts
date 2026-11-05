@@ -1,30 +1,28 @@
 import { Prisma } from "@/generated/prisma/client";
 import { NombreRol } from "@/generated/prisma/enums";
 import { ApiError } from "@/utils/api-error";
+import { exigirAdministrador } from "@/utils/permisos";
 
 import { CategoriaRepository } from "./categorias.repository";
 import type { ActualizarCategoriaInput, CrearCategoriaInput } from "./categorias.schema";
 
+const esNombreDuplicado = (error: unknown) =>
+  error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
+
 export class CategoriasService {
   constructor(private readonly repository: CategoriaRepository = new CategoriaRepository()) {}
-
-  private verificarRolAdministrador(requestedRole?: NombreRol): void {
-    if (requestedRole !== NombreRol.Administrador) {
-      throw new ApiError(403, "Acceso denegado: Solo permitido para administrador");
-    }
-  }
 
   async listar() {
     return this.repository.listar();
   }
 
-  async crear(data: CrearCategoriaInput, requestedRole?: NombreRol) {
-    this.verificarRolAdministrador(requestedRole);
+  async crear(data: CrearCategoriaInput, rolSolicitante?: NombreRol) {
+    exigirAdministrador(rolSolicitante);
 
     try {
       return await this.repository.crear(data);
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      if (esNombreDuplicado(error)) {
         throw new ApiError(409, "La categoría ya existe");
       }
 
@@ -32,8 +30,8 @@ export class CategoriasService {
     }
   }
 
-  async actualizar(id: string, data: ActualizarCategoriaInput, requestedRole?: NombreRol) {
-    this.verificarRolAdministrador(requestedRole);
+  async actualizar(id: string, data: ActualizarCategoriaInput, rolSolicitante?: NombreRol) {
+    exigirAdministrador(rolSolicitante);
 
     try {
       const categoria = await this.repository.actualizar(id, data);
@@ -44,7 +42,7 @@ export class CategoriasService {
 
       return categoria;
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      if (esNombreDuplicado(error)) {
         throw new ApiError(409, "La categoría ya existe");
       }
 

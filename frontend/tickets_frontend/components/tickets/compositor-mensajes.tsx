@@ -22,7 +22,7 @@ export function CompositorMensajes({
   const router = useRouter();
   const [html, setHtml] = useState("");
   const [vacio, setVacio] = useState(true);
-  const [version, setVersion] = useState(0);
+  const [claveEditor, setClaveEditor] = useState(0);
   const [enviando, setEnviando] = useState(false);
   const [proponer, setProponer] = useState(false);
 
@@ -45,7 +45,7 @@ export function CompositorMensajes({
       setHtml("");
       setVacio(true);
       setProponer(false);
-      setVersion(actual => actual + 1);
+      setClaveEditor(actual => actual + 1);
       router.refresh();
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
@@ -67,7 +67,7 @@ export function CompositorMensajes({
       </h2>
 
       <EditorMensaje
-        key={version}
+        key={claveEditor}
         ticketId={ticketId}
         onChange={(contenido, estaVacio) => {
           setHtml(contenido);

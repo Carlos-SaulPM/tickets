@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { Navbar } from "@/components/layout/Navbar";
+import { Navbar } from "@/components/layout/navbar";
 import { AccionesAsignacion } from "@/components/tickets/acciones-asignacion";
 import { AccionesPropuesta } from "@/components/tickets/acciones-propuesta";
 import { BadgeEstado, BadgePrioridad } from "@/components/tickets/badge-estado";

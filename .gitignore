@@ -8,11 +8,24 @@ uploads/
 # Archivos de asistentes de IA: locales, no se versionan.
 AGENTS.md
 CLAUDE.md
+GEMINI.md
 .agents/
-.opencode/
+.claude/
+.codex/
+.continue/
 .cursor/
-.cursorrules
+.gemini/
+.junie/
+.kiro/
+.opencode/
+.roo/
+.trae/
 .windsurf/
+.aider*
+.clinerules
+.cursorrules
+.mcp.json
+copilot-instructions.md
 opencode.json
 skills-lock.json
 especificaciones_y_reglas_del_proyecto.md

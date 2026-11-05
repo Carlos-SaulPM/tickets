@@ -4,9 +4,14 @@ import { z } from "zod";
 import type { UsuarioAutenticado } from "@/types/autenticacion.types";
 import { ApiError } from "@/utils/api-error";
 
-export const obtenerId = (params: Request["params"]) => {
+export const requerirId = (params: Request["params"]) => {
   const id = params.id;
-  return typeof id === "string" && z.uuid().safeParse(id).success ? id : null;
+
+  if (typeof id !== "string" || !z.uuid().safeParse(id).success) {
+    throw new ApiError(400, "El id no es válido o no existe");
+  }
+
+  return id;
 };
 
 export const obtenerUsuario = (req: Request): UsuarioAutenticado => {

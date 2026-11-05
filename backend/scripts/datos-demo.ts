@@ -464,32 +464,51 @@ const htmlMensaje = (texto: string, adjuntos: Array<{ id: string; alt: string }>
 // ---------------------------------------------------------------------------
 
 const limpiar = async () => {
-  const tickets = await prisma.ticket.findMany({
-    where: { codigo: { startsWith: PREFIJO_CODIGO } },
+  const demo = await prisma.usuario.findMany({
+    where: { correo_electronico: { endsWith: DOMINIO_DEMO } },
     select: { id: true },
+  });
+  const idsDemo = demo.map(usuario => usuario.id);
+
+  // Se borran los tickets de demostración y los que abrieron los usuarios de demostración,
+  // para que sus mensajes e historial no bloqueen el borrado de los usuarios.
+  const tickets = await prisma.ticket.findMany({
+    where: {
+      OR: [{ codigo: { startsWith: PREFIJO_CODIGO } }, { usuario_creador_id: { in: idsDemo } }],
+    },
+    select: { id: true, archivos: { select: { nombre_almacenado: true } } },
   });
   const ids = tickets.map(ticket => ticket.id);
 
   if (ids.length > 0) {
-    const adjuntos = await prisma.archivoAdjunto.findMany({
-      where: { ticket_id: { in: ids } },
-      select: { nombre_almacenado: true },
-    });
-
     await prisma.notificacion.deleteMany({ where: { ticket_id: { in: ids } } });
     await prisma.ticket.deleteMany({ where: { id: { in: ids } } });
 
-    for (const adjunto of adjuntos) {
-      rmSync(rutaAbsoluta(adjunto.nombre_almacenado), { force: true });
-    }
+    for (const ticket of tickets) {
+      for (const adjunto of ticket.archivos) {
+        rmSync(rutaAbsoluta(adjunto.nombre_almacenado), { force: true });
+      }
 
-    for (const id of ids) {
-      rmSync(join(UPLOADS_DIR, "tickets", id), { recursive: true, force: true });
+      rmSync(join(UPLOADS_DIR, "tickets", ticket.id), { recursive: true, force: true });
     }
   }
 
+  // Participaciones de los usuarios de demostración en tickets que no se borran.
+  const adjuntosSueltos = await prisma.archivoAdjunto.findMany({
+    where: { subido_por_id: { in: idsDemo } },
+    select: { nombre_almacenado: true },
+  });
+
+  for (const adjunto of adjuntosSueltos) {
+    rmSync(rutaAbsoluta(adjunto.nombre_almacenado), { force: true });
+  }
+
+  await prisma.archivoAdjunto.deleteMany({ where: { subido_por_id: { in: idsDemo } } });
+  await prisma.ticketMensaje.deleteMany({ where: { usuario_id: { in: idsDemo } } });
+  await prisma.historialTicket.deleteMany({ where: { usuario_id: { in: idsDemo } } });
+
   const usuarios = await prisma.usuario.deleteMany({
-    where: { correo_electronico: { endsWith: DOMINIO_DEMO } },
+    where: { id: { in: idsDemo } },
   });
 
   return { tickets: ids.length, usuarios: usuarios.count };

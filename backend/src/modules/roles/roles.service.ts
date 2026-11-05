@@ -10,12 +10,12 @@ export class RolesService {
   }
 
   async buscarPorId(id: string) {
-    const role = await this.repository.buscarPorId(id);
+    const rol = await this.repository.buscarPorId(id);
 
-    if (!role) {
+    if (!rol) {
       throw new ApiError(400, "El rol especificado no existe");
     }
 
-    return role;
+    return rol;
   }
 }

@@ -1,30 +1,28 @@
 import { Prisma } from "@/generated/prisma/client";
 import { NombreRol } from "@/generated/prisma/enums";
 import { ApiError } from "@/utils/api-error";
+import { exigirAdministrador } from "@/utils/permisos";
 
 import { AreaRepository } from "./areas.repository";
 import type { ActualizarAreaInput, CrearAreaInput } from "./areas.schema";
 
+const esNombreDuplicado = (error: unknown) =>
+  error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
+
 export class AreasService {
   constructor(private readonly repository: AreaRepository = new AreaRepository()) {}
-
-  private verificarRolAdministrador(requestedRole?: NombreRol): void {
-    if (requestedRole !== NombreRol.Administrador) {
-      throw new ApiError(403, "Acceso denegado: Solo permitido para administrador");
-    }
-  }
 
   async listar(activo?: boolean) {
     return this.repository.listar(activo);
   }
 
-  async crear(data: CrearAreaInput, requestedRole?: NombreRol) {
-    this.verificarRolAdministrador(requestedRole);
+  async crear(data: CrearAreaInput, rolSolicitante?: NombreRol) {
+    exigirAdministrador(rolSolicitante);
 
     try {
       return await this.repository.crear(data);
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      if (esNombreDuplicado(error)) {
         throw new ApiError(409, "El área ya existe");
       }
 
@@ -32,8 +30,8 @@ export class AreasService {
     }
   }
 
-  async actualizar(id: string, data: ActualizarAreaInput, requestedRole?: NombreRol) {
-    this.verificarRolAdministrador(requestedRole);
+  async actualizar(id: string, data: ActualizarAreaInput, rolSolicitante?: NombreRol) {
+    exigirAdministrador(rolSolicitante);
 
     try {
       const area = await this.repository.actualizar(id, data);
@@ -44,7 +42,7 @@ export class AreasService {
 
       return area;
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      if (esNombreDuplicado(error)) {
         throw new ApiError(409, "El área ya existe");
       }
 

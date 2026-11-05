@@ -2,12 +2,12 @@ import { prisma } from "@/db/prisma";
 import type { Prisma } from "@/generated/prisma/client";
 
 import type {
-  CreateUsuariosRepositoryDTO,
-  UpdateUsuariosRepositoryDTO,
-  User,
+  ActualizarUsuarioRepositoryDTO,
+  CrearUsuarioRepositoryDTO,
+  Usuario,
 } from "./usuarios.types";
 
-const userSelect = {
+const usuarioSelect = {
   id: true,
   nombre: true,
   apellido_paterno: true,
@@ -24,38 +24,38 @@ const userSelect = {
 } satisfies Prisma.UsuarioSelect;
 
 export class UsuariosRepository {
-  listar(): Promise<User[]> {
+  listar(): Promise<Usuario[]> {
     return prisma.usuario.findMany({
-      select: userSelect,
+      select: usuarioSelect,
       orderBy: { creado_en: "desc" },
     });
   }
 
-  buscarPorCorreo(correo_electronico: string): Promise<User | null> {
+  buscarPorCorreo(correo_electronico: string): Promise<Usuario | null> {
     return prisma.usuario.findUnique({
       where: { correo_electronico },
-      select: userSelect,
+      select: usuarioSelect,
     });
   }
 
-  buscarPorId(id: string): Promise<User | null> {
+  buscarPorId(id: string): Promise<Usuario | null> {
     return prisma.usuario.findUnique({
       where: { id },
-      select: userSelect,
+      select: usuarioSelect,
     });
   }
 
-  crear(data: CreateUsuariosRepositoryDTO, passwordHash: string): Promise<User> {
+  crear(data: CrearUsuarioRepositoryDTO, passwordHash: string): Promise<Usuario> {
     return prisma.usuario.create({
       data: {
         ...data,
         contrasena: passwordHash,
       },
-      select: userSelect,
+      select: usuarioSelect,
     });
   }
 
-  async actualizar(id: string, data: UpdateUsuariosRepositoryDTO): Promise<User | null> {
+  async actualizar(id: string, data: ActualizarUsuarioRepositoryDTO): Promise<Usuario | null> {
     const result = await prisma.usuario.updateMany({
       where: { id },
       data,
@@ -66,7 +66,7 @@ export class UsuariosRepository {
     return this.buscarPorId(id);
   }
 
-  async darDeBaja(id: string): Promise<User | null> {
+  async darDeBaja(id: string): Promise<Usuario | null> {
     const result = await prisma.usuario.updateMany({
       where: { id },
       data: { estado: "Baja" },

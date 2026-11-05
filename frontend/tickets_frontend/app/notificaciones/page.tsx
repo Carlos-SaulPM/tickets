@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { Navbar } from "@/components/layout/Navbar";
+import { Navbar } from "@/components/layout/navbar";
 import { ListaNotificaciones } from "@/components/notificaciones/lista-notificaciones";
 import { Button } from "@/components/ui/button";
 import { obtenerNotificaciones } from "@/lib/server/notificaciones";

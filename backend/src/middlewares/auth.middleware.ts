@@ -2,26 +2,8 @@ import type { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 
 import { env } from "@/config/env";
-import type { NombreRol } from "@/generated/prisma/enums";
-import type { UsuarioAutenticado } from "@/types/autenticacion.types";
+import { usuarioAutenticadoSchema } from "@/modules/autenticacion/schemas/autenticacion.schema";
 import { ApiError } from "@/utils/api-error";
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null;
-
-const isNombreRol = (value: unknown): value is NombreRol =>
-  value === "Administrador" || value === "Soporte" || value === "Usuario";
-
-const isUsuarioAutenticado = (value: unknown): value is UsuarioAutenticado => {
-  if (!isRecord(value)) return false;
-
-  return (
-    typeof value.id === "string" &&
-    typeof value.nombre === "string" &&
-    typeof value.correo_electronico === "string" &&
-    isNombreRol(value.rol)
-  );
-};
 
 export const authMiddleware = (req: Request, _res: Response, next: NextFunction) => {
   const authorization = req.headers.authorization;
@@ -34,14 +16,15 @@ export const authMiddleware = (req: Request, _res: Response, next: NextFunction)
   const token = authorization.slice("Bearer ".length);
 
   try {
-    const payload: unknown = jwt.verify(token, env.JWT_SECRET);
+    const payload = jwt.verify(token, env.JWT_SECRET);
+    const usuario = usuarioAutenticadoSchema.safeParse(payload);
 
-    if (!isUsuarioAutenticado(payload)) {
+    if (!usuario.success) {
       next(new ApiError(401, "No autorizado"));
       return;
     }
 
-    req.usuario = payload;
+    req.usuario = usuario.data;
     next();
   } catch {
     next(new ApiError(401, "No autorizado"));

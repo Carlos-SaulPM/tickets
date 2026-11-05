@@ -1,30 +1,30 @@
 import * as argon2 from "argon2";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { Role } from "@/modules/roles/roles.types";
+import type { Rol } from "@/modules/roles/roles.types";
 import { UsuariosService } from "@/modules/usuarios/usuarios.service";
-import type { User } from "@/modules/usuarios/usuarios.types";
+import type { Usuario } from "@/modules/usuarios/usuarios.types";
 import { ApiError } from "@/utils/api-error";
 
-const adminRole: Role = {
+const rolAdmin: Rol = {
   id: "11111111-1111-4111-8111-111111111111",
   nombre: "Administrador",
   descripcion: null,
 };
 
-const supportRole: Role = {
+const rolSoporte: Rol = {
   id: "22222222-2222-4222-8222-222222222222",
   nombre: "Soporte",
   descripcion: null,
 };
 
-const user: User = {
+const usuario: Usuario = {
   id: "33333333-3333-4333-8333-333333333333",
   nombre: "Usuario",
   apellido_paterno: "Prueba",
   apellido_materno: "Sistema",
   correo_electronico: "usuario@example.com",
-  rol: { id: supportRole.id, nombre: supportRole.nombre },
+  rol: { id: rolSoporte.id, nombre: rolSoporte.nombre },
   estado: "Activo",
   creado_en: new Date("2026-01-01T00:00:00.000Z"),
 };
@@ -55,11 +55,11 @@ describe("UsuariosService", () => {
   });
 
   it("permite listar usuarios al Administrador", async () => {
-    repository.listar.mockResolvedValue([user]);
+    repository.listar.mockResolvedValue([usuario]);
 
     const result = await service.listar("Administrador");
 
-    expect(result).toEqual([user]);
+    expect(result).toEqual([usuario]);
     expect(repository.listar).toHaveBeenCalledOnce();
   });
 
@@ -71,8 +71,8 @@ describe("UsuariosService", () => {
 
   it("crea un usuario con contraseña temporal hasheada", async () => {
     repository.buscarPorCorreo.mockResolvedValue(null);
-    repository.crear.mockResolvedValue(user);
-    rolesRepository.buscarPorId.mockResolvedValue(supportRole);
+    repository.crear.mockResolvedValue(usuario);
+    rolesRepository.buscarPorId.mockResolvedValue(rolSoporte);
 
     const result = await service.crearUsuario({
       data: {
@@ -80,9 +80,9 @@ describe("UsuariosService", () => {
         apellido_paterno: "Prueba",
         apellido_materno: "Sistema",
         correo_electronico: "usuario@example.com",
-        rol_id: supportRole.id,
+        rol_id: rolSoporte.id,
       },
-      requestedRole: "Administrador",
+      rolSolicitante: "Administrador",
     });
 
     const [, passwordHash] = repository.crear.mock.calls[0] as [unknown, string];
@@ -94,7 +94,7 @@ describe("UsuariosService", () => {
   });
 
   it("no permite asignar el rol Administrador", async () => {
-    rolesRepository.buscarPorId.mockResolvedValue(adminRole);
+    rolesRepository.buscarPorId.mockResolvedValue(rolAdmin);
 
     await expect(
       service.crearUsuario({
@@ -103,9 +103,9 @@ describe("UsuariosService", () => {
           apellido_paterno: "Admin",
           apellido_materno: "Prueba",
           correo_electronico: "otro@example.com",
-          rol_id: adminRole.id,
+          rol_id: rolAdmin.id,
         },
-        requestedRole: "Administrador",
+        rolSolicitante: "Administrador",
       })
     ).rejects.toBeInstanceOf(ApiError);
 
@@ -113,8 +113,8 @@ describe("UsuariosService", () => {
   });
 
   it("rechaza correo duplicado", async () => {
-    rolesRepository.buscarPorId.mockResolvedValue(supportRole);
-    repository.buscarPorCorreo.mockResolvedValue(user);
+    rolesRepository.buscarPorId.mockResolvedValue(rolSoporte);
+    repository.buscarPorCorreo.mockResolvedValue(usuario);
 
     await expect(
       service.crearUsuario({
@@ -123,21 +123,22 @@ describe("UsuariosService", () => {
           apellido_paterno: "Prueba",
           apellido_materno: "Sistema",
           correo_electronico: "usuario@example.com",
-          rol_id: supportRole.id,
+          rol_id: rolSoporte.id,
         },
-        requestedRole: "Administrador",
+        rolSolicitante: "Administrador",
       })
     ).rejects.toMatchObject({ status: 409 });
   });
 
   it("no permite editar un usuario dado de baja", async () => {
-    repository.buscarPorId.mockResolvedValue({ ...user, estado: "Baja" });
+    repository.buscarPorId.mockResolvedValue({ ...usuario, estado: "Baja" });
 
     await expect(
       service.actualizarUsuario({
-        id: user.id,
+        id: usuario.id,
         data: { nombre: "Nuevo" },
-        requestedRole: "Administrador",
+        rolSolicitante: "Administrador",
+        idSolicitante: undefined,
       })
     ).rejects.toMatchObject({ status: 400 });
   });
@@ -145,9 +146,9 @@ describe("UsuariosService", () => {
   it("no permite que el Administrador se elimine a sí mismo", async () => {
     await expect(
       service.eliminar({
-        id: user.id,
-        requestedRole: "Administrador",
-        requestedUserId: user.id,
+        id: usuario.id,
+        rolSolicitante: "Administrador",
+        idSolicitante: usuario.id,
       })
     ).rejects.toMatchObject({ status: 403 });
 
@@ -157,10 +158,10 @@ describe("UsuariosService", () => {
   it("no permite que el Administrador se dé de baja a sí mismo", async () => {
     await expect(
       service.actualizarUsuario({
-        id: user.id,
+        id: usuario.id,
         data: { estado: "Baja" },
-        requestedRole: "Administrador",
-        requestedUserId: user.id,
+        rolSolicitante: "Administrador",
+        idSolicitante: usuario.id,
       })
     ).rejects.toMatchObject({ status: 403 });
 
@@ -170,7 +171,7 @@ describe("UsuariosService", () => {
   it("devuelve 404 al buscar un usuario inexistente", async () => {
     repository.buscarPorId.mockResolvedValue(null);
 
-    await expect(service.obtenerPorId(user.id, "Administrador")).rejects.toMatchObject({
+    await expect(service.obtenerPorId(usuario.id, "Administrador")).rejects.toMatchObject({
       status: 404,
     });
   });

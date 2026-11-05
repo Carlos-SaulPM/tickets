@@ -17,15 +17,29 @@ import type { Rol } from "@/types/rol.types";
 import type { CrearUsuarioInput, Usuario } from "@/types/usuario.types";
 
 interface ModalUsuarioProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit: (data: CrearUsuarioInput) => Promise<void>;
-  initialData?: Usuario | null;
+  abierto: boolean;
+  alCerrar: () => void;
+  alGuardar: (datos: CrearUsuarioInput) => Promise<void>;
+  usuarioInicial?: Usuario | null;
   roles: Rol[];
 }
 
-export function ModalUsuario({ isOpen, onClose, onSubmit, initialData, roles }: ModalUsuarioProps) {
-  const isEditing = Boolean(initialData);
+const VALORES_VACIOS: CrearUsuarioInput = {
+  nombre: "",
+  apellido_paterno: "",
+  apellido_materno: "",
+  correo_electronico: "",
+  rol_id: "",
+};
+
+export function ModalUsuario({
+  abierto,
+  alCerrar,
+  alGuardar,
+  usuarioInicial,
+  roles,
+}: ModalUsuarioProps) {
+  const esEdicion = Boolean(usuarioInicial);
 
   const {
     register,
@@ -37,104 +51,93 @@ export function ModalUsuario({ isOpen, onClose, onSubmit, initialData, roles }: 
     resolver: zodResolver(crearUsuarioSchema),
   });
 
-  const assignableRoles = roles.filter(
-    role => role.nombre !== "Administrador" || initialData?.rol.nombre === "Administrador"
+  const rolesAsignables = roles.filter(
+    rol => rol.nombre !== "Administrador" || usuarioInicial?.rol.nombre === "Administrador"
   );
 
   useEffect(() => {
-    if (initialData) {
-      reset({
-        nombre: initialData.nombre,
-        apellido_paterno: initialData.apellido_paterno,
-        apellido_materno: initialData.apellido_materno,
-        correo_electronico: initialData.correo_electronico,
-        rol_id: initialData.rol.id,
-      });
-    } else {
-      reset({
-        nombre: "",
-        apellido_paterno: "",
-        apellido_materno: "",
-        correo_electronico: "",
-        rol_id: "",
-      });
-    }
-  }, [initialData, reset, isOpen]);
-
-  const handleFormSubmit = async (data: CrearUsuarioInput) => {
-    await onSubmit(data);
-    onClose();
-  };
+    reset(
+      usuarioInicial
+        ? {
+            nombre: usuarioInicial.nombre,
+            apellido_paterno: usuarioInicial.apellido_paterno,
+            apellido_materno: usuarioInicial.apellido_materno,
+            correo_electronico: usuarioInicial.correo_electronico,
+            rol_id: usuarioInicial.rol.id,
+          }
+        : VALORES_VACIOS
+    );
+  }, [usuarioInicial, reset, abierto]);
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={abierto} onOpenChange={alCerrar}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>{isEditing ? "Editar Usuario" : "Crear Usuario"}</DialogTitle>
+          <DialogTitle>{esEdicion ? "Editar usuario" : "Crear usuario"}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4 pt-2">
+
+        <form onSubmit={handleSubmit(alGuardar)} className="space-y-4 pt-2">
           <div>
             <Input placeholder="Nombre" {...register("nombre")} />
             {errors.nombre && (
-              <p className="text-destructive mt-1 text-xs">{errors.nombre.message?.toString()}</p>
+              <p className="text-destructive mt-1 text-xs">{errors.nombre.message}</p>
             )}
           </div>
+
           <div>
-            <Input placeholder="Apellido Paterno" {...register("apellido_paterno")} />
+            <Input placeholder="Apellido paterno" {...register("apellido_paterno")} />
             {errors.apellido_paterno && (
-              <p className="text-destructive mt-1 text-xs">
-                {errors.apellido_paterno.message?.toString()}
-              </p>
+              <p className="text-destructive mt-1 text-xs">{errors.apellido_paterno.message}</p>
             )}
           </div>
+
           <div>
-            <Input placeholder="Apellido Materno" {...register("apellido_materno")} />
+            <Input placeholder="Apellido materno" {...register("apellido_materno")} />
             {errors.apellido_materno && (
-              <p className="text-destructive mt-1 text-xs">
-                {errors.apellido_materno.message?.toString()}
-              </p>
+              <p className="text-destructive mt-1 text-xs">{errors.apellido_materno.message}</p>
             )}
           </div>
+
           <div>
             <Input
-              placeholder="Correo Electrónico"
+              placeholder="Correo electrónico"
               type="email"
-              disabled={isEditing}
+              disabled={esEdicion}
               {...register("correo_electronico")}
             />
             {errors.correo_electronico && (
-              <p className="text-destructive mt-1 text-xs">
-                {errors.correo_electronico.message?.toString()}
-              </p>
+              <p className="text-destructive mt-1 text-xs">{errors.correo_electronico.message}</p>
             )}
           </div>
+
           <div>
             <Select
-              key={`${initialData?.id ?? "new"}-${isOpen ? "open" : "closed"}`}
-              defaultValue={initialData?.rol.id ?? ""}
-              onValueChange={value => setValue("rol_id", value)}
+              key={`${usuarioInicial?.id ?? "nuevo"}-${abierto ? "abierto" : "cerrado"}`}
+              defaultValue={usuarioInicial?.rol.id ?? ""}
+              onValueChange={valor => setValue("rol_id", valor)}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Seleccionar Rol" />
+                <SelectValue placeholder="Seleccionar rol" />
               </SelectTrigger>
               <SelectContent>
-                {assignableRoles.map(role => (
-                  <SelectItem key={role.id} value={role.id}>
-                    {role.nombre}
+                {rolesAsignables.map(rol => (
+                  <SelectItem key={rol.id} value={rol.id}>
+                    {rol.nombre}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             {errors.rol_id && (
-              <p className="text-destructive mt-1 text-xs">{errors.rol_id.message?.toString()}</p>
+              <p className="text-destructive mt-1 text-xs">{errors.rol_id.message}</p>
             )}
           </div>
+
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={alCerrar}>
               Cancelar
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Guardando..." : isEditing ? "Actualizar" : "Guardar"}
+              {isSubmitting ? "Guardando..." : esEdicion ? "Actualizar" : "Guardar"}
             </Button>
           </div>
         </form>

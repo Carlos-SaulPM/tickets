@@ -9,9 +9,9 @@ import {
   suscribirSesion,
 } from "@/lib/sesion";
 
-const emptySubscribe = () => () => undefined;
-const getClientSnapshot = () => true;
-const getServerSnapshot = () => false;
+const suscribirNada = () => () => undefined;
+const siempreCliente = () => true;
+const siempreServidor = () => false;
 
 export const useAuth = () => {
   const snapshot = useSyncExternalStore(
@@ -20,7 +20,7 @@ export const useAuth = () => {
     obtenerSnapshotSesionServidor
   );
 
-  const isClient = useSyncExternalStore(emptySubscribe, getClientSnapshot, getServerSnapshot);
+  const isClient = useSyncExternalStore(suscribirNada, siempreCliente, siempreServidor);
 
   const sesion = useMemo(() => parsearSesion(snapshot), [snapshot]);
 

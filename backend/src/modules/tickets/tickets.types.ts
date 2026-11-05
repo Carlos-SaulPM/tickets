@@ -16,16 +16,6 @@ export interface TicketUsuarioDetalle extends TicketUsuarioResumen {
   rol: { nombre: NombreRol };
 }
 
-export interface TicketCategoriaResumen {
-  id: string;
-  nombre: string;
-}
-
-export interface TicketAreaResumen {
-  id: string;
-  nombre: string;
-}
-
 export interface Ticket {
   id: string;
   codigo: string;
@@ -33,8 +23,8 @@ export interface Ticket {
   descripcion: string;
   prioridad: PrioridadTicket;
   estado: EstadoTicket;
-  categoria: TicketCategoriaResumen;
-  area: TicketAreaResumen | null;
+  categoria: { id: string; nombre: string };
+  area: { id: string; nombre: string } | null;
   usuario_creador: TicketUsuarioResumen;
   asignado_a: TicketUsuarioResumen | null;
   creado_en: Date;

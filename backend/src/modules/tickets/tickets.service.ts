@@ -34,10 +34,6 @@ const ESTADOS_CERRABLES: readonly EstadoTicket[] = [
 export class TicketsService {
   constructor(private readonly repository: TicketRepository = new TicketRepository()) {}
 
-  private canView(ticket: Ticket, usuario: UsuarioAutenticado): boolean {
-    return puedeVerTicket(ticket, usuario);
-  }
-
   private puedeCerrar(ticket: Ticket, usuario: UsuarioAutenticado): boolean {
     if (usuario.rol === NombreRol.Administrador) return true;
 
@@ -55,11 +51,21 @@ export class TicketsService {
       throw new ApiError(404, "No se ha encontrado el ticket");
     }
 
-    if (!this.canView(ticket, usuario)) {
+    if (!puedeVerTicket(ticket, usuario)) {
       throw new ApiError(403, "No tienes acceso a este ticket");
     }
 
     return ticket;
+  }
+
+  private verificarPropuestaDelCreador(ticket: Ticket, usuario: UsuarioAutenticado): void {
+    if (ticket.usuario_creador.id !== usuario.id) {
+      throw new ApiError(403, "Solo el creador puede decidir sobre la solución");
+    }
+
+    if (ticket.estado !== EstadoTicket.En_revision) {
+      throw new ApiError(400, "El ticket no está en revisión");
+    }
   }
 
   private async validarCategoria(categoria_id: string): Promise<void> {
@@ -448,14 +454,7 @@ export class TicketsService {
 
   async aprobar(id: string, usuario: UsuarioAutenticado): Promise<Ticket> {
     const ticket = await this.getTicketPermitido(id, usuario);
-
-    if (ticket.usuario_creador.id !== usuario.id) {
-      throw new ApiError(403, "Solo el creador puede aprobar la solución");
-    }
-
-    if (ticket.estado !== EstadoTicket.En_revision) {
-      throw new ApiError(400, "El ticket no está en revisión");
-    }
+    this.verificarPropuestaDelCreador(ticket, usuario);
 
     const updated = await this.repository.updateEstado(id, EstadoTicket.Cerrado, new Date());
 
@@ -482,14 +481,7 @@ export class TicketsService {
 
   async rechazar(id: string, usuario: UsuarioAutenticado): Promise<Ticket> {
     const ticket = await this.getTicketPermitido(id, usuario);
-
-    if (ticket.usuario_creador.id !== usuario.id) {
-      throw new ApiError(403, "Solo el creador puede rechazar la solución");
-    }
-
-    if (ticket.estado !== EstadoTicket.En_revision) {
-      throw new ApiError(400, "El ticket no está en revisión");
-    }
+    this.verificarPropuestaDelCreador(ticket, usuario);
 
     const updated = await this.repository.updateEstado(id, EstadoTicket.En_proceso);
 

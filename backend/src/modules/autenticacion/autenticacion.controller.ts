@@ -1,13 +1,13 @@
 import type { Request, Response } from "express";
 
-import type { DatosLogin } from "@/types/autenticacion.types";
 import { ApiError } from "@/utils/api-error";
+import { validar } from "@/utils/validacion";
 
 import { iniciarSesion } from "./autenticacion.service";
+import { loginSchema } from "./schemas/autenticacion.schema";
 
-//Login
 export const login = async (req: Request, res: Response) => {
-  const datos = req.validated?.body as DatosLogin;
+  const datos = validar(loginSchema, req.body);
   const resultado = await iniciarSesion(datos);
 
   res.status(200).json(resultado);

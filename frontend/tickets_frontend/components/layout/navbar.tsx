@@ -3,15 +3,15 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
+import { BotonCerrarSesion } from "@/components/auth/boton-cerrar-sesion";
 import { CampanaNotificaciones } from "@/components/notificaciones/campana-notificaciones";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { NOMBRE_SISTEMA } from "@/lib/marca";
-import { authService } from "@/services/auth.service";
 
-const linkClass = (active: boolean) =>
-  active
+const claseEnlace = (activo: boolean) =>
+  activo
     ? "text-primary border-primary border-b-2 pb-1 text-sm font-medium"
     : "text-muted-foreground hover:text-foreground text-sm font-medium transition-colors";
 
@@ -19,11 +19,6 @@ export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { sesion } = useAuth();
-
-  const handleLogout = () => {
-    authService.logout();
-    router.replace("/login");
-  };
 
   return (
     <header className="bg-card/95 supports-[backdrop-filter]:bg-card/80 border-b backdrop-blur">
@@ -34,17 +29,17 @@ export function Navbar() {
           </Link>
           <nav className="flex items-center gap-4">
             {sesion && (
-              <Link href="/tickets" className={linkClass(pathname.startsWith("/tickets"))}>
+              <Link href="/tickets" className={claseEnlace(pathname.startsWith("/tickets"))}>
                 Tickets
               </Link>
             )}
             {sesion?.usuario.rol === "Administrador" && (
-              <Link href="/users" className={linkClass(pathname === "/users")}>
+              <Link href="/users" className={claseEnlace(pathname === "/users")}>
                 Usuarios
               </Link>
             )}
             {sesion && (
-              <Link href="/perfil" className={linkClass(pathname === "/perfil")}>
+              <Link href="/perfil" className={claseEnlace(pathname === "/perfil")}>
                 Perfil
               </Link>
             )}
@@ -61,9 +56,7 @@ export function Navbar() {
                   {sesion.usuario.rol}
                 </Badge>
               </div>
-              <Button variant="outline" size="sm" onClick={handleLogout}>
-                Cerrar sesión
-              </Button>
+              <BotonCerrarSesion compacto />
             </>
           ) : (
             <Button size="sm" onClick={() => router.push("/login")}>

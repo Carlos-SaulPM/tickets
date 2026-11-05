@@ -1,19 +1,15 @@
 import type { Request, Response } from "express";
 
 import { rutaAbsoluta } from "@/config/uploads";
+import { obtenerUsuario, requerirId } from "@/utils/solicitud";
 
 import { AdjuntosService } from "./adjuntos.service";
-import { obtenerId, obtenerUsuario } from "./tickets.utils";
 
 const adjuntosService = new AdjuntosService();
 
 export class AdjuntosController {
   static async subir(req: Request, res: Response) {
-    const id = obtenerId(req.params);
-
-    if (!id) {
-      return res.status(400).json({ error: "El id no es válido o no existe" });
-    }
+    const id = requerirId(req.params);
 
     const adjunto = await adjuntosService.crear(id, obtenerUsuario(req), req.file);
 
@@ -24,11 +20,7 @@ export class AdjuntosController {
   }
 
   static async descargar(req: Request, res: Response) {
-    const id = obtenerId(req.params);
-
-    if (!id) {
-      return res.status(400).json({ error: "El id no es válido o no existe" });
-    }
+    const id = requerirId(req.params);
 
     const adjunto = await adjuntosService.obtenerParaDescarga(id, obtenerUsuario(req));
 
@@ -40,6 +32,5 @@ export class AdjuntosController {
     res.setHeader("Cache-Control", "private, max-age=300");
 
     res.sendFile(rutaAbsoluta(adjunto.nombre_almacenado));
-    return;
   }
 }

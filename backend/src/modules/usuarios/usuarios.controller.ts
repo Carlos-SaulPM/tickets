@@ -1,78 +1,53 @@
 import type { Request, Response } from "express";
-import { z } from "zod";
+
+import { requerirId } from "@/utils/solicitud";
+import { validar } from "@/utils/validacion";
 
 import { actualizarUsuarioSchema, crearUsuarioSchema } from "./usuarios.schema";
 import { UsuariosService } from "./usuarios.service";
 
-const userService = new UsuariosService();
-
-const getUserId = (params: Request["params"]) => {
-  const id = params.id;
-  return typeof id === "string" && z.uuid().safeParse(id).success ? id : null;
-};
+const usuariosService = new UsuariosService();
 
 export class UsuariosController {
   static async crear(req: Request, res: Response) {
-    const validation = crearUsuarioSchema.safeParse(req.body);
+    const datos = validar(crearUsuarioSchema, req.body);
 
-    if (!validation.success) {
-      return res.status(400).json({
-        error: "Datos de entrada inválidos",
-        issues: validation.error.issues,
-      });
-    }
-
-    const result = await userService.crearUsuario({
-      data: validation.data,
-      requestedRole: req.usuario?.rol,
+    const resultado = await usuariosService.crearUsuario({
+      data: datos,
+      rolSolicitante: req.usuario?.rol,
     });
 
     return res.status(201).json({
       message: "Usuario creado correctamente",
-      data: result,
+      data: resultado,
     });
   }
 
   static async actualizar(req: Request, res: Response) {
-    const id = getUserId(req.params);
+    const id = requerirId(req.params);
 
-    if (!id) {
-      return res.status(400).json({ error: "El id no es válido o no existe" });
-    }
+    const datos = validar(actualizarUsuarioSchema, req.body);
 
-    const validation = actualizarUsuarioSchema.safeParse(req.body);
-
-    if (!validation.success) {
-      return res.status(400).json({
-        error: "Datos de entrada inválidos",
-        issues: validation.error.issues,
-      });
-    }
-
-    const updatedUser = await userService.actualizarUsuario({
+    const usuario = await usuariosService.actualizarUsuario({
       id,
-      data: validation.data,
-      requestedRole: req.usuario?.rol,
-      requestedUserId: req.usuario?.id,
+      data: datos,
+      rolSolicitante: req.usuario?.rol,
+      idSolicitante: req.usuario?.id,
     });
 
     return res.status(200).json({
-      message: "Usuario actualizado exitosamente",
-      data: updatedUser,
+      message: "Usuario actualizado correctamente",
+      data: usuario,
     });
   }
 
   static async eliminar(req: Request, res: Response) {
-    const id = getUserId(req.params);
+    const id = requerirId(req.params);
 
-    if (!id) {
-      return res.status(400).json({ error: "El id no es válido o no existe" });
-    }
-
-    await userService.eliminar({
+    await usuariosService.eliminar({
       id,
-      requestedRole: req.usuario?.rol,
-      requestedUserId: req.usuario?.id,
+      rolSolicitante: req.usuario?.rol,
+      idSolicitante: req.usuario?.id,
     });
 
     return res.status(200).json({
@@ -81,7 +56,7 @@ export class UsuariosController {
   }
 
   static async listar(req: Request, res: Response) {
-    const usuarios = await userService.listar(req.usuario?.rol);
+    const usuarios = await usuariosService.listar(req.usuario?.rol);
 
     return res.status(200).json({
       message: "Usuarios obtenidos con éxito",
@@ -90,16 +65,12 @@ export class UsuariosController {
   }
 
   static async obtenerPorId(req: Request, res: Response) {
-    const id = getUserId(req.params);
+    const id = requerirId(req.params);
 
-    if (!id) {
-      return res.status(400).json({ error: "El id no es válido o no existe" });
-    }
-
-    const usuario = await userService.obtenerPorId(id, req.usuario?.rol);
+    const usuario = await usuariosService.obtenerPorId(id, req.usuario?.rol);
 
     return res.status(200).json({
-      message: "Se ha recuperado el usuario correctamente",
+      message: "Usuario obtenido con éxito",
       data: usuario,
     });
   }

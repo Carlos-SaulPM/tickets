@@ -1,12 +1,7 @@
 import { cookies } from "next/headers";
 
+import { SERVER_API_BASE_URL } from "@/lib/server/api";
 import { parsearSesion, SESSION_COOKIE } from "@/lib/sesion";
-
-const API_URL_INTERNA = (
-  process.env.API_URL_INTERNA ||
-  process.env.NEXT_PUBLIC_API_URL ||
-  "http://localhost:3000/api/v1"
-).replace(/\/$/, "");
 
 export async function GET(_peticion: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -17,7 +12,7 @@ export async function GET(_peticion: Request, { params }: { params: Promise<{ id
     return new Response("No autorizado", { status: 401 });
   }
 
-  const respuesta = await fetch(`${API_URL_INTERNA}/adjuntos/${id}`, {
+  const respuesta = await fetch(`${SERVER_API_BASE_URL}/adjuntos/${id}`, {
     headers: { Authorization: `Bearer ${sesion.token}` },
     cache: "no-store",
   });

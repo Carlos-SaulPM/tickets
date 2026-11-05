@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { Navbar } from "@/components/layout/Navbar";
+import { Navbar } from "@/components/layout/navbar";
 import { FormularioTicket } from "@/components/tickets/formulario-ticket";
 import { Button } from "@/components/ui/button";
 import { obtenerAreasActivas, obtenerCategorias } from "@/lib/server/catalogos";

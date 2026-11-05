@@ -4,15 +4,16 @@ import * as argon2 from "argon2";
 import { Prisma } from "@/generated/prisma/client";
 import { EstadoUsuario, NombreRol } from "@/generated/prisma/enums";
 import { ApiError } from "@/utils/api-error";
+import { exigirAdministrador } from "@/utils/permisos";
 
 import { RolesRepository } from "../roles/roles.repository";
 import { UsuariosRepository } from "./usuarios.repository";
 import type {
   ActualizarUsuarioDTO,
+  ActualizarUsuarioRepositoryDTO,
   CrearUsuarioDTO,
-  CreateUsuariosRepositoryDTO,
+  CrearUsuarioRepositoryDTO,
   EliminarUsuarioDTO,
-  UpdateUsuariosRepositoryDTO,
 } from "./usuarios.types";
 
 export class UsuariosService {
@@ -21,59 +22,49 @@ export class UsuariosService {
     private readonly rolesRepository: RolesRepository = new RolesRepository()
   ) {}
 
-  private verificarRolAdministrador(requestedRole?: NombreRol): void {
-    if (!requestedRole) {
-      throw new ApiError(401, "No autenticado: Falta el rol de usuario");
-    }
-
-    if (requestedRole !== NombreRol.Administrador) {
-      throw new ApiError(403, "Acceso denegado: Solo permitido para administrador");
-    }
-  }
-
   private async validarRolAsignable(rol_id: string): Promise<void> {
-    const role = await this.rolesRepository.buscarPorId(rol_id);
+    const rol = await this.rolesRepository.buscarPorId(rol_id);
 
-    if (!role) {
+    if (!rol) {
       throw new ApiError(400, "El rol especificado no existe en el catálogo de roles");
     }
 
-    if (role.nombre === NombreRol.Administrador) {
+    if (rol.nombre === NombreRol.Administrador) {
       throw new ApiError(403, "No está permitido asignar el rol de Administrador");
     }
   }
 
-  async crearUsuario({ data, requestedRole }: CrearUsuarioDTO) {
-    this.verificarRolAdministrador(requestedRole);
+  async crearUsuario({ data, rolSolicitante }: CrearUsuarioDTO) {
+    exigirAdministrador(rolSolicitante);
     await this.validarRolAsignable(data.rol_id);
 
-    const normalizedEmail = data.correo_electronico.trim().toLowerCase();
-    const existingUser = await this.repository.buscarPorCorreo(normalizedEmail);
+    const correo = data.correo_electronico.trim().toLowerCase();
+    const existente = await this.repository.buscarPorCorreo(correo);
 
-    if (existingUser) {
+    if (existente) {
       throw new ApiError(409, "El correo electrónico ya se encuentra registrado");
     }
 
-    const generatedPassword = randomBytes(24).toString("base64url");
-    const passwordHash = await argon2.hash(generatedPassword, {
+    const contrasenaGenerada = randomBytes(24).toString("base64url");
+    const contrasenaHash = await argon2.hash(contrasenaGenerada, {
       type: argon2.argon2id,
     });
 
-    const newUser: CreateUsuariosRepositoryDTO = {
+    const nuevoUsuario: CrearUsuarioRepositoryDTO = {
       nombre: data.nombre,
       apellido_paterno: data.apellido_paterno,
       apellido_materno: data.apellido_materno,
-      correo_electronico: normalizedEmail,
+      correo_electronico: correo,
       rol_id: data.rol_id,
     };
 
     try {
-      const savedUser = await this.repository.crear(newUser, passwordHash);
+      const usuarioCreado = await this.repository.crear(nuevoUsuario, contrasenaHash);
 
       return {
-        correo_electronico: savedUser.correo_electronico,
-        contrasena: generatedPassword,
-        user: savedUser,
+        correo_electronico: usuarioCreado.correo_electronico,
+        contrasena: contrasenaGenerada,
+        user: usuarioCreado,
       };
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
@@ -84,80 +75,80 @@ export class UsuariosService {
     }
   }
 
-  async actualizarUsuario({ id, data, requestedRole, requestedUserId }: ActualizarUsuarioDTO) {
-    this.verificarRolAdministrador(requestedRole);
+  async actualizarUsuario({ id, data, rolSolicitante, idSolicitante }: ActualizarUsuarioDTO) {
+    exigirAdministrador(rolSolicitante);
 
-    if (id === requestedUserId && data.estado === EstadoUsuario.Baja) {
+    if (id === idSolicitante && data.estado === EstadoUsuario.Baja) {
       throw new ApiError(403, "No puedes darte de baja a ti mismo");
     }
 
-    const existingUser = await this.repository.buscarPorId(id);
+    const existente = await this.repository.buscarPorId(id);
 
-    if (!existingUser) {
-      throw new ApiError(404, "No existe el usuario con ese ID");
+    if (!existente) {
+      throw new ApiError(404, "No se ha encontrado el usuario");
     }
 
-    if (existingUser.estado === EstadoUsuario.Baja) {
-      throw new ApiError(400, "No se puede modificar un usuario que ha sido dado de baja.");
+    if (existente.estado === EstadoUsuario.Baja) {
+      throw new ApiError(400, "No se puede modificar un usuario dado de baja");
     }
 
-    const changes: UpdateUsuariosRepositoryDTO = {};
+    const cambios: ActualizarUsuarioRepositoryDTO = {};
 
-    if (data.nombre !== undefined) changes.nombre = data.nombre;
-    if (data.apellido_paterno !== undefined) changes.apellido_paterno = data.apellido_paterno;
-    if (data.apellido_materno !== undefined) changes.apellido_materno = data.apellido_materno;
-    if (data.estado !== undefined) changes.estado = data.estado;
+    if (data.nombre !== undefined) cambios.nombre = data.nombre;
+    if (data.apellido_paterno !== undefined) cambios.apellido_paterno = data.apellido_paterno;
+    if (data.apellido_materno !== undefined) cambios.apellido_materno = data.apellido_materno;
+    if (data.estado !== undefined) cambios.estado = data.estado;
 
     if (data.rol_id !== undefined) {
       await this.validarRolAsignable(data.rol_id);
-      changes.rol_id = data.rol_id;
+      cambios.rol_id = data.rol_id;
     }
 
-    const updatedUser = await this.repository.actualizar(id, changes);
+    const actualizado = await this.repository.actualizar(id, cambios);
 
-    if (!updatedUser) {
-      throw new ApiError(404, "No existe el usuario con ese ID");
+    if (!actualizado) {
+      throw new ApiError(404, "No se ha encontrado el usuario");
     }
 
-    return updatedUser;
+    return actualizado;
   }
 
-  async eliminar({ id, requestedRole, requestedUserId }: EliminarUsuarioDTO) {
-    this.verificarRolAdministrador(requestedRole);
+  async eliminar({ id, rolSolicitante, idSolicitante }: EliminarUsuarioDTO) {
+    exigirAdministrador(rolSolicitante);
 
-    if (id === requestedUserId) {
+    if (id === idSolicitante) {
       throw new ApiError(403, "No puedes eliminarte a ti mismo");
     }
 
-    const existingUser = await this.repository.buscarPorId(id);
+    const existente = await this.repository.buscarPorId(id);
 
-    if (!existingUser) {
+    if (!existente) {
       throw new ApiError(404, "No se ha encontrado el usuario");
     }
 
-    const deletedUser = await this.repository.darDeBaja(existingUser.id);
+    const dadoDeBaja = await this.repository.darDeBaja(existente.id);
 
-    if (!deletedUser) {
+    if (!dadoDeBaja) {
       throw new ApiError(404, "No se ha encontrado el usuario");
     }
 
-    return deletedUser;
+    return dadoDeBaja;
   }
 
-  async listar(requestedRole?: NombreRol) {
-    this.verificarRolAdministrador(requestedRole);
+  async listar(rolSolicitante: NombreRol | undefined) {
+    exigirAdministrador(rolSolicitante);
     return this.repository.listar();
   }
 
-  async obtenerPorId(id: string, requestedRole?: NombreRol) {
-    this.verificarRolAdministrador(requestedRole);
+  async obtenerPorId(id: string, rolSolicitante: NombreRol | undefined) {
+    exigirAdministrador(rolSolicitante);
 
-    const user = await this.repository.buscarPorId(id);
+    const usuario = await this.repository.buscarPorId(id);
 
-    if (!user) {
-      throw new ApiError(404, "No se ha encontrado el usuario con ese ID");
+    if (!usuario) {
+      throw new ApiError(404, "No se ha encontrado el usuario");
     }
 
-    return user;
+    return usuario;
   }
 }

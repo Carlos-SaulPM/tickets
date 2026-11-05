@@ -10,7 +10,11 @@ export const errorHandler = (
   _next: NextFunction
 ): void => {
   if (error instanceof ApiError) {
-    res.status(error.status).json({ error: error.message });
+    res
+      .status(error.status)
+      .json(
+        error.issues ? { error: error.message, issues: error.issues } : { error: error.message }
+      );
     return;
   }
 
