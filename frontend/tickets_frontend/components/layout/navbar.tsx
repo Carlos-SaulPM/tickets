@@ -38,11 +38,17 @@ export function Navbar() {
                 Usuarios
               </Link>
             )}
+            {(sesion?.usuario.rol === "Administrador" || sesion?.usuario.rol === "Soporte") && (
+              <Link href="/analiticas" className={claseEnlace(pathname === "/analiticas")}>
+                analiticas
+              </Link>
+            )}
             {sesion && (
               <Link href="/perfil" className={claseEnlace(pathname === "/perfil")}>
                 Perfil
               </Link>
             )}
+
           </nav>
         </div>
 
