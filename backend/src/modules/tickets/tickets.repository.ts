@@ -104,14 +104,15 @@ export class TicketRepository {
   async listarPaginado(
     where: Prisma.TicketWhereInput,
     skip: number,
-    take: number
+    take: number,
+    orderBy: Prisma.TicketOrderByWithRelationInput[]
   ): Promise<{ total: number; tickets: Ticket[] }> {
     const [total, tickets] = await prisma.$transaction([
       prisma.ticket.count({ where }),
       prisma.ticket.findMany({
         where,
         select: ticketSelect,
-        orderBy: [{ creado_en: "desc" }, { id: "asc" }],
+        orderBy,
         skip,
         take,
       }),

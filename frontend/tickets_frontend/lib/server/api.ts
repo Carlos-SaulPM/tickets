@@ -17,7 +17,7 @@ export const fetchConSesion = async <T>(path: string): Promise<T> => {
     return await apiRequest<T>(path, { token: sesion.token, baseUrl: SERVER_API_BASE_URL });
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) {
-      redirect("/login");
+      redirect("/login?motivo=expirada");
     }
 
     throw error;

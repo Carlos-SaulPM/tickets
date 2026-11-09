@@ -10,73 +10,61 @@ interface Props {
 export function TarjetasMetricas({ data }: Props) {
   const metricasTickets = [
     {
-      titulo: "Tickets Activos",
+      titulo: "Tickets activos",
       valor: data.tickets.activos,
       descripcion: "Abiertos, en proceso o en revisión",
       icono: Clock,
-      colorIcono: "text-amber-500",
-      bgIcono: "bg-amber-500/10",
     },
     {
-      titulo: "Tickets Resueltos",
+      titulo: "Propuestas en revisión",
       valor: data.tickets.resueltos,
-      descripcion: "Solución propuesta al usuario",
+      descripcion: "Esperando aprobación del creador",
       icono: CheckCircle2,
-      colorIcono: "text-emerald-500",
-      bgIcono: "bg-emerald-500/10",
     },
     {
-      titulo: "Tickets Cerrados",
+      titulo: "Tickets cerrados",
       valor: data.tickets.cerrados,
       descripcion: "Tickets finalizados",
       icono: Ticket,
-      colorIcono: "text-blue-500",
-      bgIcono: "bg-blue-500/10",
     },
   ];
 
   const metricasUsuarios = [
     {
-      titulo: "Usuarios Registrados",
+      titulo: "Usuarios registrados",
       valor: data.usuarios.registrados,
       descripcion: "Total de cuentas creadas",
       icono: Users,
-      colorIcono: "text-indigo-500",
-      bgIcono: "bg-indigo-500/10",
     },
     {
-      titulo: "Usuarios Activos",
+      titulo: "Usuarios activos",
       valor: data.usuarios.activos,
       descripcion: "Cuentas operativas",
       icono: UserCheck,
-      colorIcono: "text-green-500",
-      bgIcono: "bg-green-500/10",
     },
     {
-      titulo: "Usuarios Inactivos / Baja",
+      titulo: "Usuarios inactivos o de baja",
       valor: data.usuarios.inactivos,
       descripcion: "Cuentas suspendidas o dadas de baja",
       icono: UserX,
-      colorIcono: "text-rose-500",
-      bgIcono: "bg-rose-500/10",
     },
   ];
 
   return (
     <div className="space-y-6">
       <section>
-        <h2 className="mb-3 text-lg font-semibold tracking-tight">Resumen de Tickets</h2>
+        <h2 className="mb-3 text-lg font-semibold tracking-tight">Resumen de tickets</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {metricasTickets.map(item => (
             <Card key={item.titulo}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">{item.titulo}</CardTitle>
-                <div className={`rounded-lg p-2 ${item.bgIcono}`}>
-                  <item.icono className={`h-4 w-4 ${item.colorIcono}`} />
+                <div className="bg-muted text-muted-foreground rounded-lg p-2">
+                  <item.icono className="size-4" aria-hidden />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{item.valor}</div>
+                <div className="text-2xl font-bold tabular-nums">{item.valor}</div>
                 <p className="text-muted-foreground mt-1 text-xs">{item.descripcion}</p>
               </CardContent>
             </Card>
@@ -85,18 +73,18 @@ export function TarjetasMetricas({ data }: Props) {
       </section>
 
       <section>
-        <h2 className="mb-3 text-lg font-semibold tracking-tight">Resumen de Usuarios</h2>
+        <h2 className="mb-3 text-lg font-semibold tracking-tight">Resumen de usuarios</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {metricasUsuarios.map(item => (
             <Card key={item.titulo}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">{item.titulo}</CardTitle>
-                <div className={`rounded-lg p-2 ${item.bgIcono}`}>
-                  <item.icono className={`h-4 w-4 ${item.colorIcono}`} />
+                <div className="bg-muted text-muted-foreground rounded-lg p-2">
+                  <item.icono className="size-4" aria-hidden />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{item.valor}</div>
+                <div className="text-2xl font-bold tabular-nums">{item.valor}</div>
                 <p className="text-muted-foreground mt-1 text-xs">{item.descripcion}</p>
               </CardContent>
             </Card>

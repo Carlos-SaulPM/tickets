@@ -6,6 +6,10 @@ import { obtenerUsuarios } from "@/lib/server/usuarios";
 
 export const instant = false;
 
+export const metadata = {
+  title: "Usuarios",
+};
+
 export default async function UsuariosPage() {
   const { usuario } = await requerirSesion();
 
@@ -13,7 +17,7 @@ export default async function UsuariosPage() {
     return (
       <div className="bg-background min-h-screen">
         <Navbar />
-        <main id="contenido" className="container mx-auto px-4 py-8">
+        <main id="contenido" className="container mx-auto max-w-6xl px-4 py-8">
           <h1 className="mb-2 text-2xl font-bold">Acceso restringido</h1>
           <p className="text-muted-foreground">Esta sección es solo para administradores.</p>
         </main>
@@ -26,7 +30,7 @@ export default async function UsuariosPage() {
   return (
     <div className="bg-background min-h-screen">
       <Navbar />
-      <main id="contenido" className="container mx-auto px-4 py-8">
+      <main id="contenido" className="container mx-auto max-w-6xl px-4 py-8">
         <h1 className="mb-6 text-2xl font-bold">Gestión de usuarios</h1>
         <GestionUsuarios usuarios={usuarios} roles={roles} />
       </main>

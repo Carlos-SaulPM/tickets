@@ -231,7 +231,10 @@ describe("TicketsService.getAll", () => {
 
     const result = await service.listar(administrador, { pagina: 3, limite: 10 });
 
-    expect(repository.listarPaginado).toHaveBeenCalledWith({ AND: [{}] }, 20, 10);
+    expect(repository.listarPaginado).toHaveBeenCalledWith({ AND: [{}] }, 20, 10, [
+      { creado_en: "desc" },
+      { id: "asc" },
+    ]);
     expect(result.meta).toEqual({ pagina: 3, limite: 10, total: 42, total_paginas: 5 });
   });
 
@@ -259,7 +262,8 @@ describe("TicketsService.getAll", () => {
     expect(repository.listarPaginado).toHaveBeenCalledWith(
       { AND: [{ OR: [{ asignado_a_id: soporte.id }, { asignado_a_id: null }] }] },
       0,
-      20
+      20,
+      [{ creado_en: "desc" }, { id: "asc" }]
     );
   });
 
@@ -271,7 +275,8 @@ describe("TicketsService.getAll", () => {
     expect(repository.listarPaginado).toHaveBeenCalledWith(
       { AND: [{ usuario_creador_id: creador.id }] },
       0,
-      20
+      20,
+      [{ creado_en: "desc" }, { id: "asc" }]
     );
   });
 
@@ -306,7 +311,31 @@ describe("TicketsService.getAll", () => {
         ],
       },
       0,
-      20
+      20,
+      [{ creado_en: "desc" }, { id: "asc" }]
+    );
+  });
+
+  it("filtra la cola del usuario y ordena por prioridad", async () => {
+    repository.listarPaginado.mockResolvedValue({ total: 0, tickets: [] });
+
+    await service.listar(usuarioSoporte, {
+      asignado: "mios",
+      orden: "prioridad",
+      pagina: 1,
+      limite: 20,
+    });
+
+    expect(repository.listarPaginado).toHaveBeenCalledWith(
+      {
+        AND: [
+          { OR: [{ asignado_a_id: soporte.id }, { asignado_a_id: null }] },
+          { asignado_a_id: soporte.id },
+        ],
+      },
+      0,
+      20,
+      [{ prioridad: "desc" }, { creado_en: "desc" }, { id: "asc" }]
     );
   });
 

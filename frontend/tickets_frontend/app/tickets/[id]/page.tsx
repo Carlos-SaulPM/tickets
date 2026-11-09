@@ -3,18 +3,24 @@ import Link from "next/link";
 import { Navbar } from "@/components/layout/navbar";
 import { AccionesAsignacion } from "@/components/tickets/acciones-asignacion";
 import { AccionesPropuesta } from "@/components/tickets/acciones-propuesta";
+import { AccionesTicket } from "@/components/tickets/acciones-ticket";
 import { BadgeEstado, BadgePrioridad } from "@/components/tickets/badge-estado";
 import { CompositorMensajes } from "@/components/tickets/compositor-mensajes";
 import { PanelTicket } from "@/components/tickets/panel-ticket";
 import { TarjetaSoporte } from "@/components/tickets/tarjeta-soporte";
 import { TimelineTicket } from "@/components/tickets/timeline-ticket";
 import { Button } from "@/components/ui/button";
+import { obtenerAreasActivas, obtenerCategorias } from "@/lib/server/catalogos";
 import { requerirSesion } from "@/lib/server/sesion";
 import { obtenerHistorial, obtenerMensajes, obtenerTicket } from "@/lib/server/tickets";
 import { obtenerSoportes } from "@/lib/server/usuarios";
 import { construirTimeline } from "@/lib/timeline";
 
 export const instant = false;
+
+export const metadata = {
+  title: "Ticket",
+};
 
 export default async function TicketDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -23,11 +29,13 @@ export default async function TicketDetailPage({ params }: { params: Promise<{ i
   const esAdmin = sesion.usuario.rol === "Administrador";
   const esSoporte = sesion.usuario.rol === "Soporte";
 
-  const [ticket, mensajes, historial, soportes] = await Promise.all([
+  const [ticket, mensajes, historial, soportes, categorias, areas] = await Promise.all([
     obtenerTicket(id),
     obtenerMensajes(id),
     obtenerHistorial(id),
     esAdmin ? obtenerSoportes() : Promise.resolve([]),
+    esAdmin ? obtenerCategorias() : Promise.resolve([]),
+    esAdmin ? obtenerAreasActivas() : Promise.resolve([]),
   ]);
 
   const eventos = construirTimeline(mensajes, historial);
@@ -40,21 +48,32 @@ export default async function TicketDetailPage({ params }: { params: Promise<{ i
   const asignable = ticket.estado === "Abierto" || ticket.estado === "En_proceso";
   const puedeResponder = !finalizado && (!esSoporte || atiendeSoporte);
   const puedeProponer = atiendeSoporte && ticket.estado === "En_proceso";
+  const puedeCerrar = !finalizado && (esAdmin || (esSoporte && asignadoA === sesion.usuario.id));
+  const puedeEditar = esAdmin && !finalizado;
 
   return (
     <div className="bg-background min-h-screen">
       <Navbar />
 
-      <main id="contenido" className="container mx-auto max-w-5xl space-y-6 px-4 pt-8 pb-24">
+      <main id="contenido" className="container mx-auto max-w-5xl space-y-6 px-4 py-8">
         <Button variant="link" className="h-auto p-0" asChild>
           <Link href="/tickets">Volver a tickets</Link>
         </Button>
 
         <header className="space-y-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-muted-foreground font-mono text-sm">{ticket.codigo}</span>
-            <BadgeEstado estado={ticket.estado} />
-            <BadgePrioridad prioridad={ticket.prioridad} />
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-muted-foreground font-mono text-sm">{ticket.codigo}</span>
+              <BadgeEstado estado={ticket.estado} />
+              <BadgePrioridad prioridad={ticket.prioridad} />
+            </div>
+            <AccionesTicket
+              ticket={ticket}
+              puedeEditar={puedeEditar}
+              puedeCerrar={puedeCerrar}
+              categorias={categorias}
+              areas={areas}
+            />
           </div>
           <h1 className="text-2xl font-bold tracking-tight">{ticket.asunto}</h1>
         </header>
@@ -79,7 +98,7 @@ export default async function TicketDetailPage({ params }: { params: Promise<{ i
         )}
 
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
-          <div className="space-y-4">
+          <div className="order-2 space-y-4 lg:order-1">
             <h2 id="actividad-titulo" className="text-lg font-semibold">
               Actividad
             </h2>
@@ -91,7 +110,11 @@ export default async function TicketDetailPage({ params }: { params: Promise<{ i
                 respuestas nuevas.
               </p>
             ) : puedeResponder ? (
-              <CompositorMensajes ticketId={ticket.id} puedeProponer={puedeProponer} />
+              <CompositorMensajes
+                ticketId={ticket.id}
+                puedeProponer={puedeProponer}
+                puedeNotaInterna={esAdmin || esSoporte}
+              />
             ) : (
               <p className="text-muted-foreground rounded-lg border border-dashed px-4 py-6 text-center text-sm">
                 Toma el ticket para poder responder.
@@ -99,7 +122,7 @@ export default async function TicketDetailPage({ params }: { params: Promise<{ i
             )}
           </div>
 
-          <div className="space-y-4">
+          <div className="order-1 space-y-4 lg:order-2">
             <TarjetaSoporte asignado={ticket.asignado_a} desde={asignacion?.fecha ?? null}>
               <AccionesAsignacion
                 ticketId={ticket.id}

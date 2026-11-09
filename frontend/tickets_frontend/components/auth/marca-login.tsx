@@ -1,62 +1,63 @@
-import { BellRing, ImageUp, Ticket } from "lucide-react";
+import { Ticket } from "lucide-react";
 
 import { DESCRIPCION_SISTEMA, NOMBRE_SISTEMA } from "@/lib/marca";
 
-const BENEFICIOS = [
-  {
-    Icono: Ticket,
-    texto: "Crea tickets y sigue su estado sin salir de la aplicación.",
-  },
-  {
-    Icono: ImageUp,
-    texto: "Adjunta capturas y conversa con Soporte en el mismo hilo.",
-  },
-  {
-    Icono: BellRing,
-    texto: "Recibe un aviso cuando haya una solución lista para revisar.",
-  },
+const ESTADOS = [
+  { etiqueta: "Abierto", punto: "bg-sky-500" },
+  { etiqueta: "En proceso", punto: "bg-amber-500" },
+  { etiqueta: "En revisión", punto: "bg-violet-500" },
+  { etiqueta: "Cerrado", punto: "bg-slate-400" },
 ];
 
 export function MarcaLogin({ variante }: { variante: "panel" | "compacta" }) {
   if (variante === "compacta") {
     return (
-      <div className="flex items-center gap-2.5 lg:hidden">
-        <span className="bg-primary text-primary-foreground flex size-9 items-center justify-center rounded-lg">
-          <Ticket className="size-5" aria-hidden />
-        </span>
-        <p className="text-lg font-bold tracking-tight">{NOMBRE_SISTEMA}</p>
+      <div className="space-y-1 lg:hidden">
+        <div className="flex items-center gap-2.5">
+          <span className="bg-primary text-primary-foreground flex size-9 items-center justify-center rounded-lg">
+            <Ticket className="size-5" aria-hidden />
+          </span>
+          <p className="text-lg font-bold tracking-tight">{NOMBRE_SISTEMA}</p>
+        </div>
+        <p className="text-muted-foreground text-sm">{DESCRIPCION_SISTEMA}</p>
       </div>
     );
   }
 
   return (
-    <aside className="from-primary via-primary to-primary/80 text-primary-foreground relative hidden flex-col justify-between overflow-hidden bg-gradient-to-br p-12 lg:flex">
-      <div className="absolute -top-24 -right-24 size-72 rounded-full bg-white/10" aria-hidden />
-      <div className="absolute -bottom-32 -left-16 size-80 rounded-full bg-white/5" aria-hidden />
+    <aside className="bg-secondary/40 fondo-puntos relative hidden flex-col justify-between overflow-hidden border-r p-8 pb-16 lg:flex">
+      <Ticket
+        className="text-primary/[0.04] pointer-events-none absolute -right-8 bottom-10 size-64 rotate-12"
+        aria-hidden
+      />
 
       <div className="relative flex items-center gap-3">
-        <span className="flex size-11 items-center justify-center rounded-xl bg-white/15 ring-1 ring-white/25">
-          <Ticket className="size-6" aria-hidden />
+        <span className="bg-primary text-primary-foreground flex size-10 items-center justify-center rounded-lg">
+          <Ticket className="size-5" aria-hidden />
         </span>
-        <p className="text-lg font-semibold tracking-tight">{NOMBRE_SISTEMA}</p>
+        <p className="text-base font-semibold tracking-tight">{NOMBRE_SISTEMA}</p>
       </div>
 
       <div className="relative space-y-6">
-        <p className="max-w-md text-3xl font-semibold tracking-tight text-balance">
-          {DESCRIPCION_SISTEMA}
-        </p>
+        <p className="text-muted-foreground max-w-xs text-sm text-pretty">{DESCRIPCION_SISTEMA}</p>
 
-        <ul className="space-y-3 text-sm">
-          {BENEFICIOS.map(({ Icono, texto }) => (
-            <li key={texto} className="text-primary-foreground/90 flex items-start gap-3">
-              <Icono className="mt-0.5 size-4 shrink-0" aria-hidden />
-              <span>{texto}</span>
-            </li>
-          ))}
-        </ul>
+        <div className="space-y-2">
+          <p className="text-xs font-medium">El ciclo de un ticket</p>
+          <ol className="border-muted-foreground/30 ml-1 space-y-3 border-l">
+            {ESTADOS.map(({ etiqueta, punto }) => (
+              <li key={etiqueta} className="relative pl-4">
+                <span
+                  className={`absolute top-1 -left-[5px] size-2.5 rounded-full ${punto}`}
+                  aria-hidden
+                />
+                <span className="text-muted-foreground text-xs">{etiqueta}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
       </div>
 
-      <p className="text-primary-foreground/90 relative text-xs">
+      <p className="text-muted-foreground relative text-xs">
         Acceso restringido. Las cuentas las crea un administrador.
       </p>
     </aside>

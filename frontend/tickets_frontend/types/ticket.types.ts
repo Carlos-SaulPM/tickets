@@ -28,6 +28,12 @@ export const ETIQUETAS_PRIORIDAD: Record<(typeof PRIORIDADES_TICKET)[number], st
 export type EstadoTicket = (typeof ESTADOS_TICKET)[number];
 export type PrioridadTicket = (typeof PRIORIDADES_TICKET)[number];
 
+export const COLA_TICKETS = ["todos", "sin_asignar", "mios"] as const;
+export const ORDEN_TICKETS = ["recientes", "actualizados", "prioridad"] as const;
+
+export type ColaTickets = (typeof COLA_TICKETS)[number];
+export type OrdenTickets = (typeof ORDEN_TICKETS)[number];
+
 export interface TicketUsuario {
   id: string;
   nombre: string;
@@ -87,6 +93,8 @@ export interface ConsultaTickets {
   area_id?: string;
   categoria_id?: string;
   buscar?: string;
+  asignado?: ColaTickets;
+  orden?: OrdenTickets;
   pagina?: number;
   limite?: number;
 }
@@ -102,7 +110,15 @@ export interface CrearTicketInput {
 export interface CrearMensajeInput {
   mensaje: string;
   adjunto_ids?: string[];
+  es_nota_interna?: boolean;
   es_propuesta_solucion?: boolean;
+}
+
+export interface ActualizarTicketInput {
+  asunto?: string;
+  prioridad?: PrioridadTicket;
+  categoria_id?: string;
+  area_id?: string | null;
 }
 
 export const TIPOS_EVENTO_HISTORIAL = [

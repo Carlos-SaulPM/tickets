@@ -11,12 +11,13 @@ describe("MarcaLogin", () => {
     expect(screen.getByText(NOMBRE_SISTEMA)).toBeInTheDocument();
   });
 
-  it("muestra el nombre, la descripción y los beneficios en el panel", () => {
+  it("muestra el nombre, la descripción y el ciclo de estados en el panel", () => {
     render(<MarcaLogin variante="panel" />);
 
     expect(screen.getByText(NOMBRE_SISTEMA)).toBeInTheDocument();
     expect(screen.getByText(DESCRIPCION_SISTEMA)).toBeInTheDocument();
-    expect(screen.getByText(/Adjunta capturas/)).toBeInTheDocument();
-    expect(screen.getByText(/Recibe un aviso/)).toBeInTheDocument();
+    expect(screen.getByText("El ciclo de un ticket")).toBeInTheDocument();
+    expect(screen.getByText("En revisión")).toBeInTheDocument();
+    expect(screen.getByText("Cerrado")).toBeInTheDocument();
   });
 });

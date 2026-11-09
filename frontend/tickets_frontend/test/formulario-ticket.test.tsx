@@ -53,8 +53,8 @@ describe("FormularioTicket", () => {
 
     render(<FormularioTicket categorias={categorias} areas={areas} />);
 
-    await user.type(screen.getByLabelText("Asunto"), "No enciende la computadora");
-    await user.type(screen.getByLabelText("Descripción"), "No enciende desde ayer.");
+    await user.type(screen.getByLabelText(/^Asunto/), "No enciende la computadora");
+    await user.type(screen.getByLabelText(/^Descripción/), "No enciende desde ayer.");
 
     await user.click(screen.getByRole("combobox", { name: "Categoría" }));
     await user.click(await screen.findByRole("option", { name: "Hardware" }));
@@ -73,7 +73,7 @@ describe("FormularioTicket", () => {
 
     expect(pushMock).toHaveBeenCalledWith("/tickets/33333333-3333-4333-8333-333333333333");
     expect(refreshMock).toHaveBeenCalled();
-    expect(screen.getByLabelText("Asunto")).toHaveValue("");
-    expect(screen.getByLabelText("Descripción")).toHaveValue("");
+    expect(screen.getByLabelText(/^Asunto/)).toHaveValue("");
+    expect(screen.getByLabelText(/^Descripción/)).toHaveValue("");
   });
 });

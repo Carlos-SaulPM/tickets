@@ -20,6 +20,7 @@ interface ListaNotificacionesProps {
 export function ListaNotificaciones({ notificaciones, noLeidas }: ListaNotificacionesProps) {
   const router = useRouter();
   const [enviando, setEnviando] = useState(false);
+  const [marcando, setMarcando] = useState<string | null>(null);
 
   const marcarTodas = async () => {
     setEnviando(true);
@@ -44,16 +45,31 @@ export function ListaNotificaciones({ notificaciones, noLeidas }: ListaNotificac
   };
 
   const marcarUna = async (id: string) => {
-    await notificacionesService.marcarLeida(id);
-    avisarCambioDeNotificaciones();
-    router.refresh();
+    setMarcando(id);
+
+    try {
+      await notificacionesService.marcarLeida(id);
+      avisarCambioDeNotificaciones();
+      toast.success("Notificación marcada como leída");
+      router.refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudo marcar la notificación");
+    } finally {
+      setMarcando(null);
+    }
   };
 
   if (notificaciones.length === 0) {
     return (
-      <p className="text-muted-foreground rounded-lg border border-dashed px-4 py-12 text-center text-sm">
-        No hay notificaciones para mostrar.
-      </p>
+      <div className="rounded-lg border border-dashed px-4 py-12 text-center">
+        <p className="font-medium">Estás al día</p>
+        <p className="text-muted-foreground mt-1 text-sm">
+          Aquí llegarán los avisos de tus tickets.
+        </p>
+        <Button asChild variant="outline" size="sm" className="mt-4">
+          <Link href="/tickets">Ver mis tickets</Link>
+        </Button>
+      </div>
     );
   }
 
@@ -97,8 +113,13 @@ export function ListaNotificaciones({ notificaciones, noLeidas }: ListaNotificac
             </div>
 
             {!notificacion.leida && (
-              <Button variant="ghost" size="sm" onClick={() => void marcarUna(notificacion.id)}>
-                Marcar como leída
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={marcando === notificacion.id}
+                onClick={() => void marcarUna(notificacion.id)}
+              >
+                {marcando === notificacion.id ? "Marcando..." : "Marcar como leída"}
               </Button>
             )}
           </li>

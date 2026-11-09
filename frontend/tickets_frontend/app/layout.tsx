@@ -4,7 +4,6 @@ import "./globals.css";
 
 import { Geist } from "next/font/google";
 
-import { BotonNuevoTicket } from "@/components/tickets/boton-nuevo-ticket";
 import { Toaster } from "@/components/ui/sonner";
 import { DESCRIPCION_SISTEMA, NOMBRE_SISTEMA } from "@/lib/marca";
 import { cn } from "@/lib/utils";
@@ -27,7 +26,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           Saltar al contenido
         </a>
         {children}
-        <BotonNuevoTicket />
         <Toaster position="top-right" />
       </body>
     </html>

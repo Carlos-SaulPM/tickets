@@ -15,9 +15,11 @@ import { ticketsService } from "@/services/tickets.service";
 export function CompositorMensajes({
   ticketId,
   puedeProponer,
+  puedeNotaInterna,
 }: {
   ticketId: string;
   puedeProponer: boolean;
+  puedeNotaInterna: boolean;
 }) {
   const router = useRouter();
   const [html, setHtml] = useState("");
@@ -25,6 +27,7 @@ export function CompositorMensajes({
   const [claveEditor, setClaveEditor] = useState(0);
   const [enviando, setEnviando] = useState(false);
   const [proponer, setProponer] = useState(false);
+  const [notaInterna, setNotaInterna] = useState(false);
 
   const adjuntos = obtenerIdsAdjuntos(html);
 
@@ -39,18 +42,20 @@ export function CompositorMensajes({
       await ticketsService.agregarMensaje(ticketId, {
         mensaje: html,
         adjunto_ids: adjuntos,
+        es_nota_interna: notaInterna,
         es_propuesta_solucion: proponer,
       });
 
       setHtml("");
       setVacio(true);
       setProponer(false);
+      setNotaInterna(false);
       setClaveEditor(actual => actual + 1);
       router.refresh();
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
         authService.logout();
-        router.replace("/login");
+        router.replace("/login?motivo=expirada");
         return;
       }
 
@@ -75,6 +80,27 @@ export function CompositorMensajes({
         }}
       />
 
+      {puedeNotaInterna && (
+        <div className="flex items-start gap-2 rounded-lg border p-3">
+          <input
+            id="nota-interna"
+            type="checkbox"
+            className="mt-0.5 size-4"
+            checked={notaInterna}
+            onChange={evento => {
+              setNotaInterna(evento.target.checked);
+              if (evento.target.checked) setProponer(false);
+            }}
+          />
+          <div className="space-y-0.5">
+            <Label htmlFor="nota-interna">Nota interna</Label>
+            <p className="text-muted-foreground text-xs">
+              Solo la ve el equipo de Soporte y Administración. No se envía al creador.
+            </p>
+          </div>
+        </div>
+      )}
+
       {puedeProponer && (
         <div className="flex items-start gap-2 rounded-lg border p-3">
           <input
@@ -82,7 +108,10 @@ export function CompositorMensajes({
             type="checkbox"
             className="mt-0.5 size-4"
             checked={proponer}
-            onChange={evento => setProponer(evento.target.checked)}
+            onChange={evento => {
+              setProponer(evento.target.checked);
+              if (evento.target.checked) setNotaInterna(false);
+            }}
           />
           <div className="space-y-0.5">
             <Label htmlFor="proponer-solucion">Proponer solución</Label>

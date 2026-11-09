@@ -157,6 +157,9 @@ export class TicketsService {
     if (filtros.area_id) condiciones.push({ area_id: filtros.area_id });
     if (filtros.categoria_id) condiciones.push({ categoria_id: filtros.categoria_id });
 
+    if (filtros.asignado === "sin_asignar") condiciones.push({ asignado_a_id: null });
+    if (filtros.asignado === "mios") condiciones.push({ asignado_a_id: usuario.id });
+
     if (filtros.buscar) {
       condiciones.push({
         OR: [
@@ -173,7 +176,18 @@ export class TicketsService {
   async listar(usuario: UsuarioAutenticado, filtros: ListarTicketsQuery) {
     const where = this.construirWhere(usuario, filtros);
     const skip = (filtros.pagina - 1) * filtros.limite;
-    const { total, tickets } = await this.repository.listarPaginado(where, skip, filtros.limite);
+    const orderBy: Prisma.TicketOrderByWithRelationInput[] =
+      filtros.orden === "prioridad"
+        ? [{ prioridad: "desc" }, { creado_en: "desc" }, { id: "asc" }]
+        : filtros.orden === "actualizados"
+          ? [{ actualizado_en: "desc" }, { id: "asc" }]
+          : [{ creado_en: "desc" }, { id: "asc" }];
+    const { total, tickets } = await this.repository.listarPaginado(
+      where,
+      skip,
+      filtros.limite,
+      orderBy
+    );
 
     return {
       tickets,

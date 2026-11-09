@@ -7,6 +7,10 @@ import { obtenerAreasActivas, obtenerCategorias } from "@/lib/server/catalogos";
 
 export const instant = false;
 
+export const metadata = {
+  title: "Nuevo ticket",
+};
+
 export default async function NuevoPaginaTickets() {
   const [categorias, areas] = await Promise.all([obtenerCategorias(), obtenerAreasActivas()]);
 

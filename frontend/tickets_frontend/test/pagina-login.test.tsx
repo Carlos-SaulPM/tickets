@@ -36,7 +36,7 @@ describe("Página de login", () => {
   it("redirige a los tickets cuando ya hay sesión", async () => {
     sesionMock.mockResolvedValue(sesion);
 
-    await LoginPage();
+    await LoginPage({ searchParams: Promise.resolve({}) });
 
     expect(redirectMock).toHaveBeenCalledWith("/tickets");
   });
@@ -44,7 +44,7 @@ describe("Página de login", () => {
   it("muestra el formulario cuando no hay sesión", async () => {
     sesionMock.mockResolvedValue(null);
 
-    const pagina = await LoginPage();
+    const pagina = await LoginPage({ searchParams: Promise.resolve({}) });
 
     expect(redirectMock).not.toHaveBeenCalled();
     expect(pagina).toBeTruthy();

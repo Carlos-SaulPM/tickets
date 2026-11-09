@@ -46,7 +46,7 @@ export class AnaliticasRepository {
       tickets: {
         activos: ticketsActivos,
         cerrados: mapaTickets.get(EstadoTicket.Cerrado) ?? 0,
-        resueltos: mapaTickets.get(EstadoTicket.Resuelto) ?? 0,
+        resueltos: mapaTickets.get(EstadoTicket.En_revision) ?? 0,
         total: Array.from(mapaTickets.values()).reduce((acc, curr) => acc + curr, 0),
       },
       usuarios: {

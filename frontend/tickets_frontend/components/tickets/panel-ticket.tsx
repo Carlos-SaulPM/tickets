@@ -26,9 +26,6 @@ export function PanelTicket({ ticket }: { ticket: Ticket }) {
         <Campo etiqueta="Categoría">{ticket.categoria.nombre}</Campo>
         <Campo etiqueta="Área">{ticket.area?.nombre ?? "Sin área"}</Campo>
         <Campo etiqueta="Creador">{nombreCompleto(ticket.usuario_creador)}</Campo>
-        <Campo etiqueta="Asignado">
-          {ticket.asignado_a ? nombreCompleto(ticket.asignado_a) : "Sin asignar"}
-        </Campo>
         <Campo etiqueta="Creado">{formatearFecha(ticket.creado_en)}</Campo>
         <Campo etiqueta="Actualizado">{formatearFecha(ticket.actualizado_en)}</Campo>
         <Campo etiqueta="Cierre">

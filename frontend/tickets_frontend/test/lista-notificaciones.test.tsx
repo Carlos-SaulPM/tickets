@@ -84,6 +84,6 @@ describe("ListaNotificaciones", () => {
   it("muestra el estado vacío", () => {
     render(<ListaNotificaciones notificaciones={[]} noLeidas={0} />);
 
-    expect(screen.getByText("No hay notificaciones para mostrar.")).toBeInTheDocument();
+    expect(screen.getByText("Estás al día")).toBeInTheDocument();
   });
 });

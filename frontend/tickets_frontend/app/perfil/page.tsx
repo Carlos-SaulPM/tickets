@@ -9,6 +9,10 @@ import { requerirSesion } from "@/lib/server/sesion";
 
 export const instant = false;
 
+export const metadata = {
+  title: "Mi cuenta",
+};
+
 const Campo = ({ etiqueta, children }: { etiqueta: string; children: React.ReactNode }) => (
   <div className="grid gap-1">
     <span className="text-muted-foreground text-sm">{etiqueta}</span>
@@ -23,11 +27,18 @@ export default async function PerfilPage() {
     <div className="bg-background min-h-screen">
       <Navbar />
 
-      <main id="contenido" className="container mx-auto max-w-2xl px-4 py-8">
+      <main id="contenido" className="container mx-auto max-w-2xl space-y-6 px-4 py-8">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Mi cuenta</h1>
+          <p className="text-muted-foreground text-sm">
+            Datos de la cuenta con la que iniciaste sesión.
+          </p>
+        </div>
+
         <Card>
           <CardHeader>
-            <CardTitle>Mi perfil</CardTitle>
-            <CardDescription>Datos de la cuenta con la que iniciaste sesión.</CardDescription>
+            <CardTitle>Datos de la cuenta</CardTitle>
+            <CardDescription>El correo y el rol los administra un administrador.</CardDescription>
           </CardHeader>
 
           <CardContent className="space-y-4">
@@ -37,9 +48,7 @@ export default async function PerfilPage() {
             <div className="grid gap-1">
               <span className="text-muted-foreground text-sm">Rol</span>
               <div>
-                <Badge variant={usuario.rol === "Administrador" ? "default" : "secondary"}>
-                  {usuario.rol}
-                </Badge>
+                <Badge variant="secondary">{usuario.rol}</Badge>
               </div>
             </div>
 

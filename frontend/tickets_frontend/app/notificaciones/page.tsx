@@ -7,6 +7,10 @@ import { obtenerNotificaciones } from "@/lib/server/notificaciones";
 
 export const instant = false;
 
+export const metadata = {
+  title: "Notificaciones",
+};
+
 const FILTROS = [
   { etiqueta: "Todas", valor: false },
   { etiqueta: "No leídas", valor: true },

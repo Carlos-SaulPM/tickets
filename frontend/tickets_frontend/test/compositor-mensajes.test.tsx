@@ -51,7 +51,9 @@ beforeEach(() => {
 
 describe("CompositorMensajes", () => {
   it("envía los ids de las imágenes incrustadas", async () => {
-    render(<CompositorMensajes ticketId={TICKET_ID} puedeProponer={false} />);
+    render(
+      <CompositorMensajes ticketId={TICKET_ID} puedeProponer={false} puedeNotaInterna={false} />
+    );
 
     escribir(
       `<p>Mira</p><img src="/api/adjuntos/${ID_UNO}" /><img src="/api/adjuntos/${ID_DOS}" />`
@@ -67,7 +69,9 @@ describe("CompositorMensajes", () => {
   });
 
   it("no envía la imagen que el usuario borró del editor", async () => {
-    render(<CompositorMensajes ticketId={TICKET_ID} puedeProponer={false} />);
+    render(
+      <CompositorMensajes ticketId={TICKET_ID} puedeProponer={false} puedeNotaInterna={false} />
+    );
 
     escribir(`<p>Mira</p><img src="/api/adjuntos/${ID_UNO}" />`);
     escribir("<p>Al final no adjunto nada</p>");
@@ -82,7 +86,9 @@ describe("CompositorMensajes", () => {
   });
 
   it("limpia el editor después de enviar", async () => {
-    render(<CompositorMensajes ticketId={TICKET_ID} puedeProponer={false} />);
+    render(
+      <CompositorMensajes ticketId={TICKET_ID} puedeProponer={false} puedeNotaInterna={false} />
+    );
 
     escribir("<p>Listo</p>");
     await enviar();
@@ -94,7 +100,7 @@ describe("CompositorMensajes", () => {
   it("marca la propuesta de solución cuando la casilla está activa", async () => {
     const user = userEvent.setup();
 
-    render(<CompositorMensajes ticketId={TICKET_ID} puedeProponer />);
+    render(<CompositorMensajes ticketId={TICKET_ID} puedeProponer puedeNotaInterna={false} />);
 
     escribir("<p>Propuesta</p>");
     await user.click(screen.getByLabelText("Proponer solución"));
@@ -108,8 +114,27 @@ describe("CompositorMensajes", () => {
     );
   });
 
+  it("marca la nota interna cuando la casilla está activa", async () => {
+    const user = userEvent.setup();
+
+    render(<CompositorMensajes ticketId={TICKET_ID} puedeProponer={false} puedeNotaInterna />);
+
+    escribir("<p>Nota para Soporte</p>");
+    await user.click(screen.getByLabelText("Nota interna"));
+    await enviar();
+
+    await waitFor(() =>
+      expect(agregarMensajeMock).toHaveBeenCalledWith(
+        TICKET_ID,
+        expect.objectContaining({ es_nota_interna: true })
+      )
+    );
+  });
+
   it("no envía un mensaje vacío", async () => {
-    render(<CompositorMensajes ticketId={TICKET_ID} puedeProponer={false} />);
+    render(
+      <CompositorMensajes ticketId={TICKET_ID} puedeProponer={false} puedeNotaInterna={false} />
+    );
 
     await enviar();
 

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Copy } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,8 @@ import type { ActualizarUsuarioInput, CrearUsuarioInput, Usuario } from "@/types
 const mensajeDeError = (error: unknown) =>
   error instanceof Error ? error.message : "Error inesperado";
 
+const nombreCompleto = (usuario: Usuario) => `${usuario.nombre} ${usuario.apellido_paterno}`.trim();
+
 interface Credenciales {
   correo_electronico: string;
   contrasena: string;
@@ -37,11 +40,13 @@ export function GestionUsuarios({ usuarios, roles }: { usuarios: Usuario[]; role
   const [modalAbierto, setModalAbierto] = useState(false);
   const [usuarioSeleccionado, setUsuarioSeleccionado] = useState<Usuario | null>(null);
   const [credenciales, setCredenciales] = useState<Credenciales | null>(null);
+  const [porDarDeBaja, setPorDarDeBaja] = useState<Usuario | null>(null);
+  const [procesando, setProcesando] = useState(false);
 
   const manejarError = (error: unknown) => {
     if (error instanceof ApiError && error.status === 401) {
       authService.logout();
-      router.replace("/login");
+      router.replace("/login?motivo=expirada");
       return;
     }
 
@@ -90,13 +95,43 @@ export function GestionUsuarios({ usuarios, roles }: { usuarios: Usuario[]; role
     }
   };
 
-  const eliminar = async (id: string) => {
+  const confirmarBaja = async () => {
+    if (!porDarDeBaja) return;
+
+    setProcesando(true);
+
     try {
-      await usuariosService.eliminar(id);
-      toast.success("Usuario dado de baja correctamente");
+      await usuariosService.eliminar(porDarDeBaja.id);
+      toast.success("Usuario dado de baja");
+      setPorDarDeBaja(null);
       router.refresh();
     } catch (error) {
       manejarError(error);
+    } finally {
+      setProcesando(false);
+    }
+  };
+
+  const reactivar = async (usuario: Usuario) => {
+    setProcesando(true);
+
+    try {
+      await usuariosService.actualizar(usuario.id, { estado: "Activo" });
+      toast.success("Usuario reactivado");
+      router.refresh();
+    } catch (error) {
+      manejarError(error);
+    } finally {
+      setProcesando(false);
+    }
+  };
+
+  const copiar = async (texto: string, etiqueta: string) => {
+    try {
+      await navigator.clipboard.writeText(texto);
+      toast.success(`${etiqueta} copiado`);
+    } catch {
+      toast.error("No se pudo copiar. Selecciona el texto manualmente.");
     }
   };
 
@@ -105,7 +140,8 @@ export function GestionUsuarios({ usuarios, roles }: { usuarios: Usuario[]; role
       <TablaUsuarios
         usuarios={usuarios}
         alEditar={abrirEdicion}
-        alEliminar={eliminar}
+        alEliminar={setPorDarDeBaja}
+        alReactivar={reactivar}
         alCrear={abrirCreacion}
       />
 
@@ -116,6 +152,30 @@ export function GestionUsuarios({ usuarios, roles }: { usuarios: Usuario[]; role
         usuarioInicial={usuarioSeleccionado}
         roles={roles}
       />
+
+      <Dialog
+        open={porDarDeBaja !== null}
+        onOpenChange={abierto => !abierto && setPorDarDeBaja(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Dar de baja a {porDarDeBaja ? nombreCompleto(porDarDeBaja) : ""}
+            </DialogTitle>
+            <DialogDescription>
+              Dejará de poder iniciar sesión. Puedes reactivarlo después desde la misma tabla.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setPorDarDeBaja(null)} disabled={procesando}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={confirmarBaja} disabled={procesando}>
+              {procesando ? "Dando de baja..." : "Sí, dar de baja"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog
         open={credenciales !== null}
@@ -134,13 +194,48 @@ export function GestionUsuarios({ usuarios, roles }: { usuarios: Usuario[]; role
           {credenciales && (
             <div className="space-y-3">
               <div className="space-y-1">
-                <Label>Correo</Label>
-                <Input readOnly value={credenciales.correo_electronico} />
+                <Label htmlFor="credencial-correo">Correo</Label>
+                <div className="flex gap-2">
+                  <Input id="credencial-correo" readOnly value={credenciales.correo_electronico} />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    aria-label="Copiar correo"
+                    onClick={() => copiar(credenciales.correo_electronico, "Correo")}
+                  >
+                    <Copy className="size-4" aria-hidden />
+                  </Button>
+                </div>
               </div>
               <div className="space-y-1">
-                <Label>Contraseña temporal</Label>
-                <Input readOnly value={credenciales.contrasena} />
+                <Label htmlFor="credencial-contrasena">Contraseña temporal</Label>
+                <div className="flex gap-2">
+                  <Input id="credencial-contrasena" readOnly value={credenciales.contrasena} />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    aria-label="Copiar contraseña"
+                    onClick={() => copiar(credenciales.contrasena, "Contraseña")}
+                  >
+                    <Copy className="size-4" aria-hidden />
+                  </Button>
+                </div>
               </div>
+              <Button
+                type="button"
+                variant="secondary"
+                className="w-full"
+                onClick={() =>
+                  copiar(
+                    `Correo: ${credenciales.correo_electronico}\nContraseña: ${credenciales.contrasena}`,
+                    "Credenciales"
+                  )
+                }
+              >
+                Copiar ambas
+              </Button>
             </div>
           )}
 

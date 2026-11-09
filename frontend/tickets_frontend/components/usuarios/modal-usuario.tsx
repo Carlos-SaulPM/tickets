@@ -1,10 +1,19 @@
+"use client";
+
 import { useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -74,49 +83,90 @@ export function ModalUsuario({
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>{esEdicion ? "Editar usuario" : "Crear usuario"}</DialogTitle>
+          <DialogDescription>
+            {esEdicion
+              ? "Actualiza los datos del usuario. El correo no se puede cambiar."
+              : "Se generará una contraseña temporal al guardar."}
+          </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(alGuardar)} className="space-y-4 pt-2">
-          <div>
-            <Input placeholder="Nombre" {...register("nombre")} />
-            {errors.nombre && (
-              <p className="text-destructive mt-1 text-xs">{errors.nombre.message}</p>
-            )}
-          </div>
-
-          <div>
-            <Input placeholder="Apellido paterno" {...register("apellido_paterno")} />
-            {errors.apellido_paterno && (
-              <p className="text-destructive mt-1 text-xs">{errors.apellido_paterno.message}</p>
-            )}
-          </div>
-
-          <div>
-            <Input placeholder="Apellido materno" {...register("apellido_materno")} />
-            {errors.apellido_materno && (
-              <p className="text-destructive mt-1 text-xs">{errors.apellido_materno.message}</p>
-            )}
-          </div>
-
-          <div>
+        <form onSubmit={handleSubmit(alGuardar)} className="space-y-4 pt-2" noValidate>
+          <div className="space-y-2">
+            <Label htmlFor="usuario-nombre">Nombre</Label>
             <Input
-              placeholder="Correo electrónico"
+              id="usuario-nombre"
+              aria-invalid={errors.nombre ? true : undefined}
+              aria-describedby={errors.nombre ? "error-nombre" : undefined}
+              {...register("nombre")}
+            />
+            {errors.nombre && (
+              <p id="error-nombre" className="text-destructive text-xs">
+                {errors.nombre.message}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="usuario-apellido-paterno">Apellido paterno</Label>
+            <Input
+              id="usuario-apellido-paterno"
+              aria-invalid={errors.apellido_paterno ? true : undefined}
+              aria-describedby={errors.apellido_paterno ? "error-apellido-paterno" : undefined}
+              {...register("apellido_paterno")}
+            />
+            {errors.apellido_paterno && (
+              <p id="error-apellido-paterno" className="text-destructive text-xs">
+                {errors.apellido_paterno.message}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="usuario-apellido-materno">Apellido materno</Label>
+            <Input
+              id="usuario-apellido-materno"
+              aria-invalid={errors.apellido_materno ? true : undefined}
+              aria-describedby={errors.apellido_materno ? "error-apellido-materno" : undefined}
+              {...register("apellido_materno")}
+            />
+            {errors.apellido_materno && (
+              <p id="error-apellido-materno" className="text-destructive text-xs">
+                {errors.apellido_materno.message}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="usuario-correo">Correo electrónico</Label>
+            <Input
+              id="usuario-correo"
               type="email"
+              autoComplete="off"
               disabled={esEdicion}
+              aria-invalid={errors.correo_electronico ? true : undefined}
+              aria-describedby={errors.correo_electronico ? "error-correo" : undefined}
               {...register("correo_electronico")}
             />
             {errors.correo_electronico && (
-              <p className="text-destructive mt-1 text-xs">{errors.correo_electronico.message}</p>
+              <p id="error-correo" className="text-destructive text-xs">
+                {errors.correo_electronico.message}
+              </p>
             )}
           </div>
 
-          <div>
+          <div className="space-y-2">
+            <Label htmlFor="usuario-rol">Rol</Label>
             <Select
               key={`${usuarioInicial?.id ?? "nuevo"}-${abierto ? "abierto" : "cerrado"}`}
               defaultValue={usuarioInicial?.rol.id ?? ""}
-              onValueChange={valor => setValue("rol_id", valor)}
+              onValueChange={valor => setValue("rol_id", valor, { shouldValidate: true })}
             >
-              <SelectTrigger>
+              <SelectTrigger
+                id="usuario-rol"
+                aria-label="Rol"
+                aria-invalid={errors.rol_id ? true : undefined}
+                aria-describedby={errors.rol_id ? "error-rol" : undefined}
+              >
                 <SelectValue placeholder="Seleccionar rol" />
               </SelectTrigger>
               <SelectContent>
@@ -128,7 +178,9 @@ export function ModalUsuario({
               </SelectContent>
             </Select>
             {errors.rol_id && (
-              <p className="text-destructive mt-1 text-xs">{errors.rol_id.message}</p>
+              <p id="error-rol" className="text-destructive text-xs">
+                {errors.rol_id.message}
+              </p>
             )}
           </div>
 

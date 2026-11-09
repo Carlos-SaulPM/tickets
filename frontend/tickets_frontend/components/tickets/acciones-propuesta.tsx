@@ -57,7 +57,7 @@ export function AccionesPropuesta({ ticketId, codigo }: { ticketId: string; codi
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
         authService.logout();
-        router.replace("/login");
+        router.replace("/login?motivo=expirada");
         return;
       }
 

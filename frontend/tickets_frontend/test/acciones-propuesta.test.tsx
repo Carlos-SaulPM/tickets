@@ -77,6 +77,6 @@ describe("AccionesPropuesta", () => {
     await user.click(await screen.findByRole("button", { name: "Sí, aprobar" }));
 
     await waitFor(() => expect(logoutMock).toHaveBeenCalled());
-    expect(replaceMock).toHaveBeenCalledWith("/login");
+    expect(replaceMock).toHaveBeenCalledWith("/login?motivo=expirada");
   });
 });

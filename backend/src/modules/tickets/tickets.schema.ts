@@ -32,6 +32,8 @@ export const listarTicketsQuerySchema = z.object({
   area_id: z.uuid().optional(),
   categoria_id: z.uuid().optional(),
   buscar: z.string().trim().min(1).max(100).optional(),
+  asignado: z.enum(["todos", "sin_asignar", "mios"]).optional(),
+  orden: z.enum(["recientes", "actualizados", "prioridad"]).optional(),
   pagina: z.coerce.number().int().min(1).default(1),
   limite: z.coerce.number().int().min(1).max(100).default(20),
 });

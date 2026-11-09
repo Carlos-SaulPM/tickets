@@ -24,6 +24,8 @@ const listeners = new Set<() => void>();
 const isBrowser = () => typeof window !== "undefined";
 
 const tokenVencido = (token: string): boolean => {
+  if (!isBrowser()) return false;
+
   const payload = token.split(".")[1];
 
   if (!payload) return false;
