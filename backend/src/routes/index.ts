@@ -8,6 +8,7 @@ import adjuntosRouter from "@/modules/tickets/adjuntos.routes";
 import notificacionesRouter from "@/modules/tickets/notificaciones.routes";
 import ticketsRouter from "@/modules/tickets/tickets.routes";
 import usersRouter from "@/modules/usuarios/usuarios.routes";
+import analiticasRouter from "@/modules/analiticas/analiticas.routes";
 
 export const apiRouter = Router();
 
@@ -20,3 +21,4 @@ apiRouter.use("/notificaciones", notificacionesRouter);
 apiRouter.use("/adjuntos", adjuntosRouter);
 
 apiRouter.use("/autenticacion", rutasAutenticacion);
+apiRouter.use("/analiticas", analiticasRouter);
