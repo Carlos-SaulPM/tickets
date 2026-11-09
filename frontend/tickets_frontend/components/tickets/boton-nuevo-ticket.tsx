@@ -6,11 +6,13 @@ import { Plus } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
 
+const RUTAS_SIN_BOTON = new Set(["/", "/login", "/tickets/nuevo"]);
+
 export function BotonNuevoTicket() {
   const { sesion } = useAuth();
   const pathname = usePathname();
 
-  if (!sesion || pathname === "/tickets/nuevo") return null;
+  if (!sesion || RUTAS_SIN_BOTON.has(pathname)) return null;
 
   return (
     <Link

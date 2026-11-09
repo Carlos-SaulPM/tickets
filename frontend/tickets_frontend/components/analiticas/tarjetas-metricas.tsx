@@ -1,4 +1,5 @@
-import { Ticket, CheckCircle2, Clock, Users, UserCheck, UserX } from "lucide-react";
+import { CheckCircle2, Clock, Ticket, UserCheck, Users, UserX } from "lucide-react";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { DashboardAnaliticasDTO } from "@/types/analiticas.types";
 
@@ -64,19 +65,19 @@ export function TarjetasMetricas({ data }: Props) {
   return (
     <div className="space-y-6">
       <section>
-        <h2 className="text-lg font-semibold tracking-tight mb-3">Resumen de Tickets</h2>
+        <h2 className="mb-3 text-lg font-semibold tracking-tight">Resumen de Tickets</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {metricasTickets.map((item) => (
+          {metricasTickets.map(item => (
             <Card key={item.titulo}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">{item.titulo}</CardTitle>
-                <div className={`p-2 rounded-lg ${item.bgIcono}`}>
+                <div className={`rounded-lg p-2 ${item.bgIcono}`}>
                   <item.icono className={`h-4 w-4 ${item.colorIcono}`} />
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{item.valor}</div>
-                <p className="text-xs text-muted-foreground mt-1">{item.descripcion}</p>
+                <p className="text-muted-foreground mt-1 text-xs">{item.descripcion}</p>
               </CardContent>
             </Card>
           ))}
@@ -84,19 +85,19 @@ export function TarjetasMetricas({ data }: Props) {
       </section>
 
       <section>
-        <h2 className="text-lg font-semibold tracking-tight mb-3">Resumen de Usuarios</h2>
+        <h2 className="mb-3 text-lg font-semibold tracking-tight">Resumen de Usuarios</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {metricasUsuarios.map((item) => (
+          {metricasUsuarios.map(item => (
             <Card key={item.titulo}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">{item.titulo}</CardTitle>
-                <div className={`p-2 rounded-lg ${item.bgIcono}`}>
+                <div className={`rounded-lg p-2 ${item.bgIcono}`}>
                   <item.icono className={`h-4 w-4 ${item.colorIcono}`} />
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{item.valor}</div>
-                <p className="text-xs text-muted-foreground mt-1">{item.descripcion}</p>
+                <p className="text-muted-foreground mt-1 text-xs">{item.descripcion}</p>
               </CardContent>
             </Card>
           ))}

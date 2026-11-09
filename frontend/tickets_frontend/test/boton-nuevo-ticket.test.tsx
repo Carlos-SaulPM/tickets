@@ -57,4 +57,22 @@ describe("BotonNuevoTicket", () => {
 
     expect(screen.queryByRole("link", { name: "Nuevo ticket" })).not.toBeInTheDocument();
   });
+
+  it("se oculta en el login", () => {
+    estado.sesion = sesion;
+    estado.pathname = "/login";
+
+    render(<BotonNuevoTicket />);
+
+    expect(screen.queryByRole("link", { name: "Nuevo ticket" })).not.toBeInTheDocument();
+  });
+
+  it("se oculta en la raíz", () => {
+    estado.sesion = sesion;
+    estado.pathname = "/";
+
+    render(<BotonNuevoTicket />);
+
+    expect(screen.queryByRole("link", { name: "Nuevo ticket" })).not.toBeInTheDocument();
+  });
 });

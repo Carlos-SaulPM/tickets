@@ -8,13 +8,16 @@ uploads/
 # Archivos de asistentes de IA: locales, no se versionan.
 AGENTS.md
 CLAUDE.md
+DESIGN.md
 GEMINI.md
+PRODUCT.md
 .agents/
 .claude/
 .codex/
 .continue/
 .cursor/
 .gemini/
+.impeccable/
 .junie/
 .kiro/
 .opencode/

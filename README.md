@@ -140,6 +140,7 @@ Abierto → En_proceso → En_revision → Resuelto → Cerrado
 | -------- | ---------------------------------- | -------------------------------- |
 | `POST`   | `/api/v1/autenticacion/login`      | Público                          |
 | `GET`    | `/api/v1/autenticacion/perfil`     | JWT                              |
+| `GET`    | `/api/v1/salud`                    | Público                          |
 | `GET`    | `/api/v1/users`                    | JWT + Administrador              |
 | `POST`   | `/api/v1/users`                    | JWT + Administrador              |
 | `PATCH`  | `/api/v1/users/:id`                | JWT + Administrador              |

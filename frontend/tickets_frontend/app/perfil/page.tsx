@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { BotonCerrarSesion } from "@/components/auth/boton-cerrar-sesion";
 import { Navbar } from "@/components/layout/navbar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -42,12 +43,13 @@ export default async function PerfilPage() {
               </div>
             </div>
 
-            <div className="flex flex-wrap  pt-2">
+            <div className="flex flex-wrap gap-2 pt-2">
               {usuario.rol === "Administrador" && (
                 <Button asChild>
                   <Link href="/users">Gestionar usuarios</Link>
                 </Button>
               )}
+              <BotonCerrarSesion />
             </div>
           </CardContent>
         </Card>

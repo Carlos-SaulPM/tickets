@@ -1,5 +1,6 @@
 import { Router } from "express";
 
+import analiticasRouter from "@/modules/analiticas/analiticas.routes";
 import areasRouter from "@/modules/areas/areas.routes";
 import { rutasAutenticacion } from "@/modules/autenticacion/autenticacion.routes";
 import categoriasRouter from "@/modules/categorias/categorias.routes";
@@ -8,9 +9,12 @@ import adjuntosRouter from "@/modules/tickets/adjuntos.routes";
 import notificacionesRouter from "@/modules/tickets/notificaciones.routes";
 import ticketsRouter from "@/modules/tickets/tickets.routes";
 import usersRouter from "@/modules/usuarios/usuarios.routes";
-import analiticasRouter from "@/modules/analiticas/analiticas.routes";
 
 export const apiRouter = Router();
+
+apiRouter.get("/salud", (_req, res) => {
+  res.status(200).json({ estado: "ok" });
+});
 
 apiRouter.use("/users", usersRouter);
 apiRouter.use("/roles", rolesRouter);
@@ -19,6 +23,6 @@ apiRouter.use("/categorias", categoriasRouter);
 apiRouter.use("/tickets", ticketsRouter);
 apiRouter.use("/notificaciones", notificacionesRouter);
 apiRouter.use("/adjuntos", adjuntosRouter);
+apiRouter.use("/analiticas", analiticasRouter);
 
 apiRouter.use("/autenticacion", rutasAutenticacion);
-apiRouter.use("/analiticas", analiticasRouter);

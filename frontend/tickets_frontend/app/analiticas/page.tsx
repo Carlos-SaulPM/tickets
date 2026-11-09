@@ -1,14 +1,28 @@
-import { Navbar } from "@/components/layout/navbar";
-import { TarjetasMetricas } from "@/components/analiticas/tarjetas-metricas";
-import { GraficasDashboard } from "@/components/analiticas/graficas-dashboard";
 import { BotonExportarPdf } from "@/components/analiticas/boton-exportar-pdf";
+import { GraficasDashboard } from "@/components/analiticas/graficas-dashboard";
+import { TarjetasMetricas } from "@/components/analiticas/tarjetas-metricas";
+import { Navbar } from "@/components/layout/navbar";
 import { obtenerAnaliticasDashboard } from "@/lib/server/analiticas";
 import { requerirSesion } from "@/lib/server/sesion";
 
 export const instant = false;
 
 export default async function AnaliticasPage() {
-  await requerirSesion();
+  const { usuario } = await requerirSesion();
+
+  if (usuario.rol !== "Administrador" && usuario.rol !== "Soporte") {
+    return (
+      <div className="bg-background min-h-screen">
+        <Navbar />
+        <main id="contenido" className="container mx-auto px-4 py-8">
+          <h1 className="mb-2 text-2xl font-bold">Acceso restringido</h1>
+          <p className="text-muted-foreground">
+            Esta sección es solo para administradores y soporte.
+          </p>
+        </main>
+      </div>
+    );
+  }
 
   const data = await obtenerAnaliticasDashboard();
 

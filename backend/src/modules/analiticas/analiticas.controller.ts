@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+
 import { obtenerUsuario } from "@/utils/solicitud";
 
 import { AnaliticasService } from "./analiticas.service";

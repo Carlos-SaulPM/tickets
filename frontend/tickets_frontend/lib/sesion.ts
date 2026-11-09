@@ -23,13 +23,31 @@ const listeners = new Set<() => void>();
 
 const isBrowser = () => typeof window !== "undefined";
 
+const tokenVencido = (token: string): boolean => {
+  const payload = token.split(".")[1];
+
+  if (!payload) return false;
+
+  try {
+    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/").replace(/=+$/, "");
+    const relleno = "=".repeat((4 - (base64.length % 4)) % 4);
+    const { exp } = JSON.parse(atob(base64 + relleno)) as { exp?: unknown };
+
+    return typeof exp === "number" && exp * 1000 <= Date.now();
+  } catch {
+    return false;
+  }
+};
+
 export const parsearSesion = (raw: string | null): Sesion | null => {
   if (!raw) return null;
 
   try {
     const resultado = sesionSchema.safeParse(JSON.parse(raw));
 
-    return resultado.success ? resultado.data : null;
+    if (!resultado.success || tokenVencido(resultado.data.token)) return null;
+
+    return resultado.data;
   } catch {
     return null;
   }

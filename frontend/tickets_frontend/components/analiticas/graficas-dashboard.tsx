@@ -1,6 +1,7 @@
 "use client";
 
 import { Bar, BarChart, Cell, Pie, PieChart, XAxis, YAxis } from "recharts";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import type { DashboardAnaliticasDTO } from "@/types/analiticas.types";
@@ -61,7 +62,7 @@ export function GraficasDashboard({ data }: Props) {
 
           <CardDescription>Proporción entre cuentas activas e inactivas/baja</CardDescription>
         </CardHeader>
-        <CardContent className="flex justify-center items-center">
+        <CardContent className="flex items-center justify-center">
           <ChartContainer config={configGraficaUsuarios} className="h-72 w-full">
             <PieChart>
               <Pie

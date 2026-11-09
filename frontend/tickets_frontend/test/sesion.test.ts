@@ -20,6 +20,9 @@ const sesion: Sesion = {
   },
 };
 
+const jwtConExpiracion = (exp: number) =>
+  `cabecera.${Buffer.from(JSON.stringify({ exp })).toString("base64url")}.firma`;
+
 beforeEach(() => {
   window.localStorage.clear();
   document.cookie = "tickets.session=; path=/; max-age=0";
@@ -62,6 +65,25 @@ describe("sesión", () => {
     });
 
     expect(parsearSesion(raw)).toBeNull();
+  });
+
+  it("ignora un JWT expirado", () => {
+    const expirado = jwtConExpiracion(Math.floor(Date.now() / 1000) - 60);
+
+    expect(parsearSesion(JSON.stringify({ ...sesion, token: expirado }))).toBeNull();
+  });
+
+  it("acepta un JWT vigente", () => {
+    const vigente = jwtConExpiracion(Math.floor(Date.now() / 1000) + 3600);
+    const conToken = { ...sesion, token: vigente };
+
+    expect(parsearSesion(JSON.stringify(conToken))).toEqual(conToken);
+  });
+
+  it("acepta tokens que no son JWT", () => {
+    const conToken = { ...sesion, token: "token-opaco" };
+
+    expect(parsearSesion(JSON.stringify(conToken))).toEqual(conToken);
   });
 
   it("notifica cambios a los suscriptores", () => {

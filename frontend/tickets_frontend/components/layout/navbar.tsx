@@ -40,7 +40,7 @@ export function Navbar() {
             )}
             {(sesion?.usuario.rol === "Administrador" || sesion?.usuario.rol === "Soporte") && (
               <Link href="/analiticas" className={claseEnlace(pathname === "/analiticas")}>
-                analiticas
+                Analíticas
               </Link>
             )}
             {sesion && (
@@ -48,7 +48,6 @@ export function Navbar() {
                 Perfil
               </Link>
             )}
-
           </nav>
         </div>
 

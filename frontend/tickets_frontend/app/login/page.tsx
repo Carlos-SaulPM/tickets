@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { FormularioLogin } from "@/components/auth/formulario-login";
+import { LimpiarSesionInvalida } from "@/components/auth/limpiar-sesion-invalida";
 import { MarcaLogin } from "@/components/auth/marca-login";
 import { NOMBRE_SISTEMA } from "@/lib/marca";
 import { obtenerSesionServidor } from "@/lib/server/sesion";
@@ -16,6 +17,7 @@ export default async function LoginPage() {
 
   return (
     <main id="contenido" className="bg-background grid min-h-screen lg:grid-cols-[1.05fr_1fr]">
+      <LimpiarSesionInvalida />
       <h1 className="sr-only">Iniciar sesión en {NOMBRE_SISTEMA}</h1>
 
       <MarcaLogin variante="panel" />
