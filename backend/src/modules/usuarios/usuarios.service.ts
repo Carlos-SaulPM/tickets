@@ -88,8 +88,21 @@ export class UsuariosService {
       throw new ApiError(404, "No se ha encontrado el usuario");
     }
 
-    if (existente.estado === EstadoUsuario.Baja) {
+    const reactivando =
+      existente.estado === EstadoUsuario.Baja && data.estado === EstadoUsuario.Activo;
+
+    if (existente.estado === EstadoUsuario.Baja && !reactivando) {
       throw new ApiError(400, "No se puede modificar un usuario dado de baja");
+    }
+
+    if (reactivando) {
+      const reactivado = await this.repository.actualizar(id, { estado: EstadoUsuario.Activo });
+
+      if (!reactivado) {
+        throw new ApiError(404, "No se ha encontrado el usuario");
+      }
+
+      return reactivado;
     }
 
     const cambios: ActualizarUsuarioRepositoryDTO = {};

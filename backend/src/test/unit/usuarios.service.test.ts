@@ -143,6 +143,23 @@ describe("UsuariosService", () => {
     ).rejects.toMatchObject({ status: 400 });
   });
 
+  it("permite reactivar un usuario dado de baja", async () => {
+    const reactivado: Usuario = { ...usuario, estado: "Activo" };
+
+    repository.buscarPorId.mockResolvedValue({ ...usuario, estado: "Baja" });
+    repository.actualizar.mockResolvedValue(reactivado);
+
+    const result = await service.actualizarUsuario({
+      id: usuario.id,
+      data: { estado: "Activo" },
+      rolSolicitante: "Administrador",
+      idSolicitante: undefined,
+    });
+
+    expect(repository.actualizar).toHaveBeenCalledWith(usuario.id, { estado: "Activo" });
+    expect(result.estado).toBe("Activo");
+  });
+
   it("no permite que el Administrador se elimine a sí mismo", async () => {
     await expect(
       service.eliminar({

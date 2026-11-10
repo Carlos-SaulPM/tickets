@@ -63,9 +63,11 @@ export function TablaUsuarios({
 
   const acciones = (usuario: Usuario) => (
     <>
-      <Button size="sm" variant="outline" onClick={() => alEditar(usuario)}>
-        Editar
-      </Button>
+      {usuario.estado !== "Baja" && (
+        <Button size="sm" variant="outline" onClick={() => alEditar(usuario)}>
+          Editar
+        </Button>
+      )}
       {usuario.estado === "Baja" ? (
         <Button size="sm" variant="secondary" onClick={() => alReactivar(usuario)}>
           Reactivar

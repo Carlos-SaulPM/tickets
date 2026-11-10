@@ -37,6 +37,7 @@ interface UserDto {
   id: string;
   nombre: string;
   correo_electronico: string;
+  estado: string;
 }
 
 interface CreateUserBody {
@@ -199,6 +200,51 @@ describe("API autenticación y usuarios", () => {
     expect(removedLogin.response.status).toBe(403);
   });
 
+  it("reactiva un usuario dado de baja y le devuelve el acceso", async () => {
+    const admin = await login("admin@example.com", "admin123");
+    const roles = await getRoles(admin.body.token);
+    const userRole = roles.body.data.find(role => role.nombre === "Usuario");
+    const correo = `reactivacion-${Date.now()}@example.com`;
+
+    const created = await request(app)
+      .post("/api/v1/users")
+      .set("Authorization", `Bearer ${admin.body.token}`)
+      .send({
+        nombre: "Reactivación",
+        apellido_paterno: "Prueba",
+        apellido_materno: "Sistema",
+        correo_electronico: correo,
+        rol_id: userRole?.id,
+      });
+
+    const credenciales = getBody<CreateUserBody>(created).data;
+
+    expect(created.status).toBe(201);
+
+    const baja = await request(app)
+      .delete(`/api/v1/users/${credenciales.user.id}`)
+      .set("Authorization", `Bearer ${admin.body.token}`);
+
+    expect(baja.status).toBe(200);
+    expect((await login(correo, credenciales.contrasena)).response.status).toBe(403);
+
+    const edicionBloqueada = await request(app)
+      .patch(`/api/v1/users/${credenciales.user.id}`)
+      .set("Authorization", `Bearer ${admin.body.token}`)
+      .send({ nombre: "No debería aplicarse" });
+
+    expect(edicionBloqueada.status).toBe(400);
+
+    const reactivado = await request(app)
+      .patch(`/api/v1/users/${credenciales.user.id}`)
+      .set("Authorization", `Bearer ${admin.body.token}`)
+      .send({ estado: "Activo" });
+
+    expect(reactivado.status).toBe(200);
+    expect(getBody<UpdateUserBody>(reactivado).data.estado).toBe("Activo");
+    expect((await login(correo, credenciales.contrasena)).response.status).toBe(200);
+  });
+
   it("rechaza correo duplicado", async () => {
     const admin = await login("admin@example.com", "admin123");
     const roles = await getRoles(admin.body.token);
@@ -350,6 +396,8 @@ describe("API catálogos", () => {
 interface TicketDto {
   id: string;
   codigo: string;
+  asunto: string;
+  prioridad: string;
   estado: string;
   asignado_a: { id: string } | null;
   usuario_creador: { id: string };
@@ -763,6 +811,83 @@ describe("API tickets", () => {
       .send({ estado: "En_revision" });
 
     expect(response.status).toBe(400);
+  });
+});
+
+describe("API tickets: edición", () => {
+  it("permite al Administrador editar asunto, prioridad, categoría y área", async () => {
+    const admin = await login("admin@example.com", "admin123");
+    const creador = await login("usuario@example.com", "usuario123");
+    const categorias = await request(app)
+      .get("/api/v1/categorias")
+      .set("Authorization", `Bearer ${admin.body.token}`);
+    const areas = await request(app)
+      .get("/api/v1/areas")
+      .set("Authorization", `Bearer ${admin.body.token}`);
+    const listaCategorias = getBody<CategoriaListBody>(categorias).data;
+    const listaAreas = getBody<AreaListBody>(areas).data;
+    const categoria = listaCategorias[0];
+    const area = listaAreas[0];
+
+    const created = await request(app)
+      .post("/api/v1/tickets")
+      .set("Authorization", `Bearer ${creador.body.token}`)
+      .send({
+        asunto: "Asunto original de edición",
+        descripcion: "Ticket para probar la edición.",
+        categoria_id: categoria?.id,
+      });
+    const ticket = getBody<TicketBody>(created).data;
+
+    const editado = await request(app)
+      .patch(`/api/v1/tickets/${ticket.id}`)
+      .set("Authorization", `Bearer ${admin.body.token}`)
+      .send({
+        asunto: "Asunto corregido",
+        prioridad: "Alta",
+        categoria_id: listaCategorias[1]?.id,
+        area_id: area?.id,
+      });
+
+    expect(editado.status).toBe(200);
+    expect(getBody<TicketBody>(editado).data.asunto).toBe("Asunto corregido");
+    expect(getBody<TicketBody>(editado).data.prioridad).toBe("Alta");
+
+    const detalle = await request(app)
+      .get(`/api/v1/tickets/${ticket.id}`)
+      .set("Authorization", `Bearer ${admin.body.token}`);
+
+    expect(detalle.status).toBe(200);
+    expect(getBody<TicketBody>(detalle).data.asunto).toBe("Asunto corregido");
+    expect(getBody<TicketBody>(detalle).data.prioridad).toBe("Alta");
+
+    const historial = await request(app)
+      .get(`/api/v1/tickets/${ticket.id}/historial`)
+      .set("Authorization", `Bearer ${admin.body.token}`);
+
+    expect(
+      getBody<HistorialListBody>(historial).data.some(
+        evento => evento.tipo_evento === "CAMBIO_PRIORIDAD"
+      )
+    ).toBe(true);
+  });
+
+  it("rechaza la edición a Soporte y al Usuario creador", async () => {
+    const soporte = await login("soporte@example.com", "soporte123");
+    const creador = await login("usuario@example.com", "usuario123");
+    const ticketId = await crearTicket(creador.body.token);
+
+    const delSoporte = await request(app)
+      .patch(`/api/v1/tickets/${ticketId}`)
+      .set("Authorization", `Bearer ${soporte.body.token}`)
+      .send({ asunto: "Cambio no autorizado" });
+    const delCreador = await request(app)
+      .patch(`/api/v1/tickets/${ticketId}`)
+      .set("Authorization", `Bearer ${creador.body.token}`)
+      .send({ asunto: "Cambio no autorizado" });
+
+    expect(delSoporte.status).toBe(403);
+    expect(delCreador.status).toBe(403);
   });
 });
 
@@ -1361,5 +1486,61 @@ describe("API tickets cerrados", () => {
       });
 
     expect(subida.status).toBe(400);
+  });
+});
+
+interface DashboardBody {
+  data: {
+    tickets: { activos: number; cerrados: number; resueltos: number; total: number };
+    usuarios: { registrados: number; activos: number; inactivos: number };
+  };
+}
+
+describe("API analíticas", () => {
+  it("devuelve el dashboard al Administrador y al Soporte", async () => {
+    const admin = await login("admin@example.com", "admin123");
+    const soporte = await login("soporte@example.com", "soporte123");
+
+    const delAdmin = await request(app)
+      .get("/api/v1/analiticas/dashboard")
+      .set("Authorization", `Bearer ${admin.body.token}`);
+    const delSoporte = await request(app)
+      .get("/api/v1/analiticas/dashboard")
+      .set("Authorization", `Bearer ${soporte.body.token}`);
+
+    expect(delAdmin.status).toBe(200);
+    expect(delSoporte.status).toBe(200);
+
+    const dashboard = getBody<DashboardBody>(delAdmin).data;
+
+    expect(dashboard.tickets.total).toBeGreaterThan(0);
+    expect(dashboard.usuarios.registrados).toBeGreaterThan(0);
+    expect(dashboard.tickets.activos + dashboard.tickets.cerrados).toBeLessThanOrEqual(
+      dashboard.tickets.total
+    );
+    expect(dashboard.usuarios.activos + dashboard.usuarios.inactivos).toBe(
+      dashboard.usuarios.registrados
+    );
+  });
+
+  it("rechaza el dashboard al Usuario y sin sesión", async () => {
+    const usuario = await login("usuario@example.com", "usuario123");
+
+    const delUsuario = await request(app)
+      .get("/api/v1/analiticas/dashboard")
+      .set("Authorization", `Bearer ${usuario.body.token}`);
+    const sinSesion = await request(app).get("/api/v1/analiticas/dashboard");
+
+    expect(delUsuario.status).toBe(403);
+    expect(sinSesion.status).toBe(401);
+  });
+});
+
+describe("API salud", () => {
+  it("responde sin sesión", async () => {
+    const respuesta = await request(app).get("/api/v1/salud");
+
+    expect(respuesta.status).toBe(200);
+    expect(getBody<{ estado: string }>(respuesta).estado).toBe("ok");
   });
 });
