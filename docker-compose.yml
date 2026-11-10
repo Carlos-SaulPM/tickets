@@ -133,6 +133,64 @@ services:
       - "${FRONTEND_PROD_PORT:-8081}:3000"
     restart: unless-stopped
 
+  # Túneles temporales de Cloudflare (quick tunnel, URL aleatoria por arranque).
+  # Un contenedor por origen: activa tunnel-dev o tunnel-prod en COMPOSE_PROFILES.
+  cloudflared-dev-frontend:
+    profiles: ["tunnel-dev"]
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command:
+      [
+        "tunnel",
+        "--no-autoupdate",
+        "--protocol",
+        "${CLOUDFLARE_TUNNEL_PROTOCOL:-quic}",
+        "--url",
+        "http://frontend:3000",
+      ]
+
+  cloudflared-dev-backend:
+    profiles: ["tunnel-dev"]
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command:
+      [
+        "tunnel",
+        "--no-autoupdate",
+        "--protocol",
+        "${CLOUDFLARE_TUNNEL_PROTOCOL:-quic}",
+        "--url",
+        "http://app:3000",
+      ]
+
+  cloudflared-prod-frontend:
+    profiles: ["tunnel-prod"]
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command:
+      [
+        "tunnel",
+        "--no-autoupdate",
+        "--protocol",
+        "${CLOUDFLARE_TUNNEL_PROTOCOL:-quic}",
+        "--url",
+        "http://frontend-prod:3000",
+      ]
+
+  cloudflared-prod-backend:
+    profiles: ["tunnel-prod"]
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command:
+      [
+        "tunnel",
+        "--no-autoupdate",
+        "--protocol",
+        "${CLOUDFLARE_TUNNEL_PROTOCOL:-quic}",
+        "--url",
+        "http://app-prod:3000",
+      ]
+
 volumes:
   pgdata:
   uploads:

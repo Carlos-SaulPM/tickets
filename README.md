@@ -91,6 +91,9 @@ Prefijo: `/api/v1`.
 | Acción                     | Comando                                                                     |
 | -------------------------- | --------------------------------------------------------------------------- |
 | Levantar / reconstruir     | `docker compose up -d --build`                                              |
+| Enlace público dev         | `COMPOSE_PROFILES=dev,tunnel-dev docker compose up -d`                      |
+| Enlace público prod        | `COMPOSE_PROFILES=prod,tunnel-prod docker compose up -d --build`            |
+| Cambiar de perfil          | `docker compose down --remove-orphans` y ajustar `COMPOSE_PROFILES`         |
 | Logs / shell               | `docker compose logs -f app frontend` · `docker compose exec app sh`        |
 | Verificar backend          | `cd backend && pnpm lint && pnpm typecheck && pnpm test`                    |
 | Verificar frontend         | `cd frontend/tickets_frontend && pnpm lint && pnpm test && pnpm build`      |
@@ -101,6 +104,8 @@ Prefijo: `/api/v1`.
 | Demo                       | `docker compose exec app pnpm db:demo [--tickets=N]`                        |
 | Borrar demo                | `docker compose exec app pnpm db:demo:limpiar`                              |
 | Apagar                     | `docker compose down` · `docker compose down -v` borra BD y uploads         |
+
+Los perfiles `tunnel-*` levantan el túnel de Cloudflare. Los pasos completos están en «Enlace público con Cloudflare Tunnel», dentro de la sección Producción.
 
 Los tests de backend usan Testcontainers: necesitan Docker y pnpm en el host, y un `backend/.env` con `DATABASE_URL` y `JWT_SECRET` (mínimo 32 caracteres). Los del frontend corren en jsdom, sin Docker.
 
@@ -126,25 +131,28 @@ Los tests de backend usan Testcontainers: necesitan Docker y pnpm en el host, y 
 
 ## Variables de entorno
 
-| Variable                               | Por defecto                    | Uso                                    |
-| -------------------------------------- | ------------------------------ | -------------------------------------- |
-| `COMPOSE_PROFILES`                     | `dev`                          | `dev` o `prod`                         |
-| `POSTGRES_USER`                        | `postgres`                     | Usuario de PostgreSQL                  |
-| `POSTGRES_PASSWORD`                    | `postgres`                     | Contraseña de PostgreSQL               |
-| `POSTGRES_DB`                          | `tickets`                      | Nombre de la base                      |
-| `JWT_SECRET`                           | —                              | Firma JWT, mínimo 32 caracteres        |
-| `JWT_EXPIRES_IN`                       | `3600`                         | Duración del token en segundos         |
-| `NEXT_PUBLIC_API_URL`                  | `http://localhost:3000/api/v1` | API para el navegador                  |
-| `API_URL_INTERNA`                      | `http://app:3000/api/v1`       | API para SSR dentro de Compose         |
-| `FRONTEND_URL`                         | `http://localhost:3001`        | Base de los enlaces en correos         |
-| `SMTP_HOST`                            | `mailpit`                      | Vacío: solo imprime correos en consola |
-| `SMTP_PORT`                            | `1025`                         | Puerto SMTP                            |
-| `SMTP_SECURE`                          | `false`                        | `true` para TLS implícito (465)        |
-| `SMTP_USER` / `SMTP_PASS`              | —                              | Credenciales SMTP                      |
-| `SMTP_FROM`                            | `Sistema de Tickets <…>`       | Remitente                              |
-| `SEED_DEMO`                            | `false`                        | Carga la demo en cada `up`             |
-| `APP_PORT` / `FRONTEND_PORT`           | `3000` / `3001`                | Puertos dev                            |
-| `APP_PROD_PORT` / `FRONTEND_PROD_PORT` | `8080` / `8081`                | Puertos prod                           |
+Solo `COMPOSE_PROFILES` y `JWT_SECRET` son obligatorias. El resto tiene valor por defecto en `docker-compose.yml`: defínelas en `.env` únicamente si quieres cambiarlo.
+
+| Variable                               | Por defecto                        | Uso                                        |
+| -------------------------------------- | ---------------------------------- | ------------------------------------------ |
+| `COMPOSE_PROFILES`                     | `dev`                              | `dev`, `prod` + `tunnel-dev`/`tunnel-prod` |
+| `JWT_SECRET`                           | —                                  | Firma JWT, mínimo 32 caracteres            |
+| `NEXT_PUBLIC_API_URL`                  | `:3000` (dev) / `:8080` (prod)     | API del navegador; se compila en prod      |
+| `FRONTEND_URL`                         | `:3001` (dev) / `:8081` (prod)     | Enlaces en los correos                     |
+| `API_URL_INTERNA`                      | `app:3000` / `app-prod:3000`       | API para SSR dentro de Compose             |
+| `POSTGRES_USER`                        | `postgres`                         | Usuario de PostgreSQL                      |
+| `POSTGRES_PASSWORD`                    | `postgres`                         | Contraseña de PostgreSQL                   |
+| `POSTGRES_DB`                          | `tickets`                          | Nombre de la base                          |
+| `JWT_EXPIRES_IN`                       | `3600`                             | Duración del token en segundos             |
+| `SMTP_HOST`                            | `mailpit`                          | Vacío: solo imprime correos en consola     |
+| `SMTP_PORT`                            | `1025`                             | Puerto SMTP                                |
+| `SMTP_SECURE`                          | `false`                            | `true` para TLS implícito (465)            |
+| `SMTP_USER` / `SMTP_PASS`              | —                                  | Credenciales SMTP                          |
+| `SMTP_FROM`                            | `Sistema de Tickets <…>`           | Remitente                                  |
+| `SEED_DEMO`                            | `false`                            | Carga la demo en cada `up`                 |
+| `CLOUDFLARE_TUNNEL_PROTOCOL`           | `quic`                             | `http2` si la red bloquea UDP/7844         |
+| `APP_PORT` / `FRONTEND_PORT`           | `3000` / `3001`                    | Puertos dev                                |
+| `APP_PROD_PORT` / `FRONTEND_PROD_PORT` | `8080` / `8081`                    | Puertos prod                               |
 
 ## Producción
 
@@ -160,6 +168,39 @@ docker compose up -d --build
 ```
 
 Frontend en `:8081`, API en `:8080/api/v1`. `NEXT_PUBLIC_API_URL` se compila dentro de la imagen: si cambia, reconstruye `frontend-prod`. Para 80/443 usa un reverse proxy.
+
+### Enlace público con Cloudflare Tunnel
+
+Sirve para enseñar producción por un enlace temporal, sin abrir puertos. Añade el perfil del túnel en `.env`:
+
+```bash
+COMPOSE_PROFILES=prod,tunnel-prod
+```
+
+El túnel debe existir **antes** de construir el frontend, porque la URL del API se compila dentro de la imagen. Tres pasos:
+
+```bash
+# 1. Arranca solo los túneles y copia las dos URLs de los logs
+COMPOSE_PROFILES=tunnel-prod docker compose up -d
+docker compose logs cloudflared-prod-backend  | grep -o 'https://[a-z0-9-]*\.trycloudflare\.com'
+docker compose logs cloudflared-prod-frontend | grep -o 'https://[a-z0-9-]*\.trycloudflare\.com'
+
+# 2. Escribe las URLs en .env
+#    NEXT_PUBLIC_API_URL=https://<backend>.trycloudflare.com/api/v1
+#    FRONTEND_URL=https://<frontend>.trycloudflare.com
+
+# 3. Construye y arranca todo
+docker compose up -d --build
+```
+
+- Comparte como frontend la URL de `cloudflared-prod-frontend`.
+- El API queda en la URL de `cloudflared-prod-backend` + `/api/v1`.
+
+En **dev** el procedimiento es más corto porque no hay build: usa `COMPOSE_PROFILES=dev,tunnel-dev`, arranca los túneles, copia las URLs a `NEXT_PUBLIC_API_URL` y `FRONTEND_URL`, y ejecuta `docker compose up -d frontend`.
+
+Las dos URLs son únicas para dev y prod: al cambiar de entorno ajusta o comenta sus valores, y no tengas los dos arriba a la vez con enlaces propios.
+
+La URL cambia cada vez que se recrea el contenedor del túnel; en producción eso obliga a repetir el paso 2. El enlace es público y sin autenticación: úsalo solo durante la demo y apágalo volviendo a `COMPOSE_PROFILES=prod` seguido de `docker compose down --remove-orphans`.
 
 ## Limitaciones
 
