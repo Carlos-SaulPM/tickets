@@ -58,7 +58,7 @@ export function AccionesTicket({
   const [enviando, setEnviando] = useState(false);
 
   const [asunto, setAsunto] = useState(ticket.asunto);
-  const [prioridad, setPrioridad] = useState<PrioridadTicket>(ticket.prioridad);
+  const [prioridad, setPrioridad] = useState(ticket.prioridad);
   const [categoriaId, setCategoriaId] = useState(ticket.categoria.id);
   const [areaId, setAreaId] = useState(ticket.area?.id ?? SIN_AREA);
 

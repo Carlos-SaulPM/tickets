@@ -1,7 +1,5 @@
 import { prisma } from "@/db/prisma";
 
-import type { Rol } from "./roles.types";
-
 const rolSelect = {
   id: true,
   nombre: true,
@@ -9,14 +7,14 @@ const rolSelect = {
 } as const;
 
 export class RolesRepository {
-  listar(): Promise<Rol[]> {
+  listar() {
     return prisma.rol.findMany({
       select: rolSelect,
       orderBy: { nombre: "asc" },
     });
   }
 
-  buscarPorId(id: string): Promise<Rol | null> {
+  buscarPorId(id: string) {
     return prisma.rol.findUnique({
       where: { id },
       select: rolSelect,

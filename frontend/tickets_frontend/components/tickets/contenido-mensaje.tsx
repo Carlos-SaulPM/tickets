@@ -14,8 +14,7 @@ export function ContenidoMensaje({
   contenido: string;
   adjuntos: Adjunto[];
 }) {
-  // Compara por id: el editor guarda `/api/adjuntos/<id>` (proxy de Next) y la API expone
-  // `/api/v1/adjuntos/<id>`, así que la URL no sirve para saber si ya está incrustado.
+  // Se compara por id porque las rutas del editor y de la API son distintas.
   const adjuntosSueltos = adjuntos.filter(adjunto => !contenido.includes(adjunto.id));
 
   return (

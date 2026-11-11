@@ -12,7 +12,7 @@ export class AnaliticasController {
     const dashboard = await analiticasService.obtenerDashboard(usuario);
 
     res.status(200).json({
-      message: "Analíticas del dashboard obtenidas correctamente",
+      message: "Analíticas del dashboard",
       data: dashboard,
     });
   }

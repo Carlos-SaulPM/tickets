@@ -14,4 +14,4 @@ pnpm lint
 pnpm build
 ```
 
-`NEXT_PUBLIC_API_URL` apunta al API y se inyecta en build. Si la cambias, reconstruye la imagen.
+`NEXT_PUBLIC_API_URL` apunta al API y se inyecta en build. Si cambia, hay que reconstruir la imagen.

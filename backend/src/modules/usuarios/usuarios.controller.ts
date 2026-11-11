@@ -18,7 +18,7 @@ export class UsuariosController {
     });
 
     return res.status(201).json({
-      message: "Usuario creado correctamente",
+      message: "Usuario creado",
       data: resultado,
     });
   }
@@ -36,7 +36,7 @@ export class UsuariosController {
     });
 
     return res.status(200).json({
-      message: "Usuario actualizado correctamente",
+      message: "Usuario actualizado",
       data: usuario,
     });
   }
@@ -51,7 +51,7 @@ export class UsuariosController {
     });
 
     return res.status(200).json({
-      message: "Usuario dado de baja correctamente",
+      message: "Usuario dado de baja",
     });
   }
 
@@ -59,7 +59,7 @@ export class UsuariosController {
     const usuarios = await usuariosService.listar(req.usuario?.rol);
 
     return res.status(200).json({
-      message: "Usuarios obtenidos con éxito",
+      message: "Lista de usuarios",
       data: usuarios,
     });
   }
@@ -70,7 +70,7 @@ export class UsuariosController {
     const usuario = await usuariosService.obtenerPorId(id, req.usuario?.rol);
 
     return res.status(200).json({
-      message: "Usuario obtenido con éxito",
+      message: "Usuario encontrado",
       data: usuario,
     });
   }

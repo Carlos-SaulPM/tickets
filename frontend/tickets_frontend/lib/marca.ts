@@ -1,7 +1,3 @@
-/**
- * Identidad visible del sistema. Cambia estos valores por los del cliente:
- * el login, el título de la pestaña y la barra de navegación los toman de aquí.
- */
 export const NOMBRE_SISTEMA = "Sistema de Tickets";
 
 export const DESCRIPCION_SISTEMA =

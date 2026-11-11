@@ -134,7 +134,7 @@ services:
     restart: unless-stopped
 
   # Túneles temporales de Cloudflare (quick tunnel, URL aleatoria por arranque).
-  # Un contenedor por origen: activa tunnel-dev o tunnel-prod en COMPOSE_PROFILES.
+  # Un contenedor por origen: se activa tunnel-dev o tunnel-prod en COMPOSE_PROFILES.
   cloudflared-dev-frontend:
     profiles: ["tunnel-dev"]
     image: cloudflare/cloudflared:latest

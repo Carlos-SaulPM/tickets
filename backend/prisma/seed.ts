@@ -187,19 +187,16 @@ const sembrarDemostracion = async () => {
       id: mensajeTres,
       usuarioId: soporte.id,
       hace: 130,
-      mensaje: texto(
-        mensajeTres,
-        "También dejo el reporte de sesión, por si lo necesitas. No lo incrusté para no alargar el mensaje."
-      ),
+      mensaje: texto(mensajeTres, "También dejo el reporte de sesión, por si hace falta."),
     },
   ];
 
   await prisma.ticket.upsert({
     where: { id: DEMO_TICKET_ID },
     update: {
-      asunto: "Demostración de imágenes y adjuntos",
+      asunto: "Las capturas no se ven en los mensajes",
       descripcion:
-        "Ticket creado por el seed para revisar el visor de imágenes, los adjuntos sueltos y la limpieza de huérfanos. Se puede editar o cerrar sin afectar al resto del sistema.",
+        "Al responder un ticket, las imágenes adjuntas no aparecen en el mensaje. Adjunto un par de capturas para revisarlo.",
       estado: EstadoTicket.En_proceso,
       categoria_id: categoria.id,
       area_id: area.id,
@@ -209,9 +206,9 @@ const sembrarDemostracion = async () => {
     create: {
       id: DEMO_TICKET_ID,
       codigo: "#TK-DEMO",
-      asunto: "Demostración de imágenes y adjuntos",
+      asunto: "Las capturas no se ven en los mensajes",
       descripcion:
-        "Ticket creado por el seed para revisar el visor de imágenes, los adjuntos sueltos y la limpieza de huérfanos. Se puede editar o cerrar sin afectar al resto del sistema.",
+        "Al responder un ticket, las imágenes adjuntas no aparecen en el mensaje. Adjunto un par de capturas para revisarlo.",
       prioridad: "Media",
       estado: EstadoTicket.En_proceso,
       categoria_id: categoria.id,

@@ -56,8 +56,8 @@ export function FiltrosTickets({
     filtros.prioridad ?? TODOS
   );
   const [buscar, setBuscar] = useState(filtros.buscar ?? "");
-  const [cola, setCola] = useState<ColaTickets>(filtros.asignado ?? "todos");
-  const [orden, setOrden] = useState<OrdenTickets>(filtros.orden ?? "recientes");
+  const [cola, setCola] = useState(filtros.asignado ?? "todos");
+  const [orden, setOrden] = useState(filtros.orden ?? "recientes");
 
   const navegar = (extra: Partial<ConsultaTickets> = {}) => {
     const query = construirConsultaTickets({

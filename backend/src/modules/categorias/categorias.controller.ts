@@ -13,7 +13,7 @@ export class CategoriasController {
     const categorias = await categoriasService.listar();
 
     return res.status(200).json({
-      message: "Categorías obtenidas con éxito",
+      message: "Lista de categorías",
       data: categorias,
     });
   }
@@ -24,7 +24,7 @@ export class CategoriasController {
     const categoria = await categoriasService.crear(datos, req.usuario?.rol);
 
     return res.status(201).json({
-      message: "Categoría creada correctamente",
+      message: "Categoría creada",
       data: categoria,
     });
   }
@@ -37,7 +37,7 @@ export class CategoriasController {
     const categoria = await categoriasService.actualizar(id, datos, req.usuario?.rol);
 
     return res.status(200).json({
-      message: "Categoría actualizada correctamente",
+      message: "Categoría actualizada",
       data: categoria,
     });
   }

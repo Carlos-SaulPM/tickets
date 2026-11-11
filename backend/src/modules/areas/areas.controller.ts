@@ -18,7 +18,7 @@ export class AreasController {
     const areas = await areasService.listar(parseActivo(activo));
 
     return res.status(200).json({
-      message: "Áreas obtenidas con éxito",
+      message: "Lista de áreas",
       data: areas,
     });
   }
@@ -29,7 +29,7 @@ export class AreasController {
     const area = await areasService.crear(datos, req.usuario?.rol);
 
     return res.status(201).json({
-      message: "Área creada correctamente",
+      message: "Área creada",
       data: area,
     });
   }
@@ -42,7 +42,7 @@ export class AreasController {
     const area = await areasService.actualizar(id, datos, req.usuario?.rol);
 
     return res.status(200).json({
-      message: "Área actualizada correctamente",
+      message: "Área actualizada",
       data: area,
     });
   }

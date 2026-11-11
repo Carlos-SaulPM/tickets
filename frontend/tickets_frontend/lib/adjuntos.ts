@@ -18,10 +18,7 @@ export const errorImagen = (archivo: File) => {
 
 export const contarImagenes = (html: string) => (html.match(/<img\b/gi) ?? []).length;
 
-/**
- * Los ids se derivan del HTML y no de un estado aparte: así el mensaje solo enlaza
- * las imágenes que siguen visibles en el editor.
- */
+// Solo se enlazan las imágenes que siguen en el HTML.
 export const obtenerIdsAdjuntos = (html: string) => {
   const ids = new Set<string>();
 

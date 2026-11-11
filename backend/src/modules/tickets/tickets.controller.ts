@@ -25,7 +25,7 @@ export class TicketsController {
     const { tickets, meta } = await ticketsService.listar(obtenerUsuario(req), filtros);
 
     return res.status(200).json({
-      message: "Tickets obtenidos con éxito",
+      message: "Lista de tickets",
       data: tickets,
       meta,
     });
@@ -37,7 +37,7 @@ export class TicketsController {
     const ticket = await ticketsService.obtenerPorId(id, obtenerUsuario(req));
 
     return res.status(200).json({
-      message: "Ticket obtenido con éxito",
+      message: "Ticket encontrado",
       data: ticket,
     });
   }
@@ -47,7 +47,7 @@ export class TicketsController {
     const ticket = await ticketsService.crear(datos, obtenerUsuario(req));
 
     return res.status(201).json({
-      message: "Ticket creado correctamente",
+      message: "Ticket creado",
       data: ticket,
     });
   }
@@ -59,7 +59,7 @@ export class TicketsController {
     const ticket = await ticketsService.actualizar(id, datos, obtenerUsuario(req));
 
     return res.status(200).json({
-      message: "Ticket actualizado correctamente",
+      message: "Ticket actualizado",
       data: ticket,
     });
   }
@@ -71,7 +71,7 @@ export class TicketsController {
     const ticket = await ticketsService.asignar(id, asignado_a_id, obtenerUsuario(req));
 
     return res.status(200).json({
-      message: "Ticket asignado correctamente",
+      message: "Ticket asignado",
       data: ticket,
     });
   }
@@ -83,7 +83,7 @@ export class TicketsController {
     const ticket = await ticketsService.cambiarEstado(id, estado, obtenerUsuario(req));
 
     return res.status(200).json({
-      message: "Estado del ticket actualizado correctamente",
+      message: "Estado actualizado",
       data: ticket,
     });
   }
@@ -94,7 +94,7 @@ export class TicketsController {
     const mensajes = await ticketsService.obtenerMensajes(id, obtenerUsuario(req));
 
     return res.status(200).json({
-      message: "Mensajes obtenidos con éxito",
+      message: "Mensajes del ticket",
       data: mensajes,
     });
   }
@@ -106,7 +106,7 @@ export class TicketsController {
     const mensaje = await ticketsService.agregarMensaje(id, datos, obtenerUsuario(req));
 
     return res.status(201).json({
-      message: "Mensaje creado correctamente",
+      message: "Mensaje creado",
       data: mensaje,
     });
   }
@@ -117,7 +117,7 @@ export class TicketsController {
     const ticket = await ticketsService.aprobar(id, obtenerUsuario(req));
 
     return res.status(200).json({
-      message: "Solución aprobada correctamente",
+      message: "Solución aprobada",
       data: ticket,
     });
   }
@@ -128,7 +128,7 @@ export class TicketsController {
     const ticket = await ticketsService.rechazar(id, obtenerUsuario(req));
 
     return res.status(200).json({
-      message: "Solución rechazada correctamente",
+      message: "Solución rechazada",
       data: ticket,
     });
   }
@@ -139,7 +139,7 @@ export class TicketsController {
     const historial = await ticketsService.obtenerHistorial(id, obtenerUsuario(req));
 
     return res.status(200).json({
-      message: "Historial obtenido con éxito",
+      message: "Historial del ticket",
       data: historial,
     });
   }
@@ -150,7 +150,7 @@ export class TicketsController {
     const { data, meta } = await ticketsService.obtenerNotificaciones(obtenerUsuario(req), filtros);
 
     return res.status(200).json({
-      message: "Notificaciones obtenidas con éxito",
+      message: "Lista de notificaciones",
       data,
       meta,
     });
@@ -160,7 +160,7 @@ export class TicketsController {
     const actualizadas = await ticketsService.marcarTodasLeidas(obtenerUsuario(req));
 
     return res.status(200).json({
-      message: "Notificaciones marcadas como leídas",
+      message: "Notificaciones leídas",
       data: { actualizadas },
     });
   }
@@ -171,7 +171,7 @@ export class TicketsController {
     await ticketsService.marcarNotificacionLeida(id, obtenerUsuario(req));
 
     return res.status(200).json({
-      message: "Notificación marcada como leída",
+      message: "Notificación leída",
     });
   }
 }

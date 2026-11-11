@@ -45,9 +45,7 @@ const tomar = <T>(lista: readonly T[], indice: number): T => {
   return valor;
 };
 
-// ---------------------------------------------------------------------------
 // Catálogo de usuarios de prueba
-// ---------------------------------------------------------------------------
 
 interface UsuarioDemo {
   correo: string;
@@ -165,9 +163,7 @@ const usuariosDemo: UsuarioDemo[] = [
   },
 ];
 
-// ---------------------------------------------------------------------------
 // Contenido de los tickets
-// ---------------------------------------------------------------------------
 
 interface MensajeDemo {
   autor: "creador" | "soporte" | "admin";
@@ -429,9 +425,7 @@ const propuestas = [
   "Propongo ampliar el espacio del buzón y archivar los correos anteriores a dos años.",
 ];
 
-// ---------------------------------------------------------------------------
 // Utilidades
-// ---------------------------------------------------------------------------
 
 const hora = 60 * 60 * 1000;
 
@@ -459,9 +453,7 @@ const htmlMensaje = (texto: string, adjuntos: Array<{ id: string; alt: string }>
   return `<p>${texto}</p>${imagenes}`;
 };
 
-// ---------------------------------------------------------------------------
 // Limpieza
-// ---------------------------------------------------------------------------
 
 const limpiar = async () => {
   const demo = await prisma.usuario.findMany({
@@ -514,9 +506,7 @@ const limpiar = async () => {
   return { tickets: ids.length, usuarios: usuarios.count };
 };
 
-// ---------------------------------------------------------------------------
 // Creación
-// ---------------------------------------------------------------------------
 
 interface Contexto {
   categorias: string[];
@@ -909,9 +899,7 @@ const construirGenerados = (cantidad: number): TicketDemo[] => {
   });
 };
 
-// ---------------------------------------------------------------------------
 // Entrada
-// ---------------------------------------------------------------------------
 
 const argumentos = process.argv.slice(2);
 const soloLimpiar = argumentos.includes("--limpiar");

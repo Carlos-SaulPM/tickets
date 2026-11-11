@@ -1,11 +1,7 @@
 import { prisma } from "@/db/prisma";
 import type { Prisma } from "@/generated/prisma/client";
 
-import type {
-  ActualizarUsuarioRepositoryDTO,
-  CrearUsuarioRepositoryDTO,
-  Usuario,
-} from "./usuarios.types";
+import type { ActualizarUsuarioRepositoryDTO, CrearUsuarioRepositoryDTO } from "./usuarios.types";
 
 const usuarioSelect = {
   id: true,
@@ -24,28 +20,28 @@ const usuarioSelect = {
 } satisfies Prisma.UsuarioSelect;
 
 export class UsuariosRepository {
-  listar(): Promise<Usuario[]> {
+  listar() {
     return prisma.usuario.findMany({
       select: usuarioSelect,
       orderBy: { creado_en: "desc" },
     });
   }
 
-  buscarPorCorreo(correo_electronico: string): Promise<Usuario | null> {
+  buscarPorCorreo(correo_electronico: string) {
     return prisma.usuario.findUnique({
       where: { correo_electronico },
       select: usuarioSelect,
     });
   }
 
-  buscarPorId(id: string): Promise<Usuario | null> {
+  buscarPorId(id: string) {
     return prisma.usuario.findUnique({
       where: { id },
       select: usuarioSelect,
     });
   }
 
-  crear(data: CrearUsuarioRepositoryDTO, passwordHash: string): Promise<Usuario> {
+  crear(data: CrearUsuarioRepositoryDTO, passwordHash: string) {
     return prisma.usuario.create({
       data: {
         ...data,
@@ -55,7 +51,7 @@ export class UsuariosRepository {
     });
   }
 
-  async actualizar(id: string, data: ActualizarUsuarioRepositoryDTO): Promise<Usuario | null> {
+  async actualizar(id: string, data: ActualizarUsuarioRepositoryDTO) {
     const result = await prisma.usuario.updateMany({
       where: { id },
       data,
@@ -66,7 +62,7 @@ export class UsuariosRepository {
     return this.buscarPorId(id);
   }
 
-  async darDeBaja(id: string): Promise<Usuario | null> {
+  async darDeBaja(id: string) {
     const result = await prisma.usuario.updateMany({
       where: { id },
       data: { estado: "Baja" },

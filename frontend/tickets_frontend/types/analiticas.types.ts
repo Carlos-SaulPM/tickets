@@ -1,5 +1,3 @@
-// src/types/analiticas.types.ts
-
 export interface DashboardMetricasTickets {
   activos: number;
   cerrados: number;

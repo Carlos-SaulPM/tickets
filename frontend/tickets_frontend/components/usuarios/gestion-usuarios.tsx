@@ -77,7 +77,7 @@ export function GestionUsuarios({ usuarios, roles }: { usuarios: Usuario[]; role
         }
 
         await usuariosService.actualizar(usuarioSeleccionado.id, cambios);
-        toast.success("Usuario actualizado correctamente");
+        toast.success("Usuario actualizado");
       } else {
         const creado = await usuariosService.crear(datos);
 
@@ -85,7 +85,7 @@ export function GestionUsuarios({ usuarios, roles }: { usuarios: Usuario[]; role
           correo_electronico: creado.correo_electronico,
           contrasena: creado.contrasena,
         });
-        toast.success("Usuario creado correctamente");
+        toast.success("Usuario creado");
       }
 
       setModalAbierto(false);

@@ -103,7 +103,7 @@ docker compose exec app pnpm db:demo --tickets=20   # volumen reducido
 docker compose exec app pnpm db:demo:limpiar        # solo borra
 ```
 
-Con `SEED_DEMO=true` en `.env`, el servicio `migrate` carga la demo en cada `up` y la recrea desde cero. No lo actives en producción.
+Con `SEED_DEMO=true` en `.env`, el servicio `migrate` carga la demo en cada `up` y la recrea desde cero. No se usa en producción.
 
 Las cuentas demo son `soporte2@demo.local` … `soporte5@demo.local` y `usuario2@demo.local` … `usuario12@demo.local`, todas con `demo123`. Los tickets usan el prefijo `#D-` y reparten estados entre abiertos, en proceso, en revisión, resueltos y cerrados. La limpieza no toca las cuentas base, los catálogos ni el ticket `#TK-DEMO`.
 
@@ -165,21 +165,23 @@ npx newman run postman/tickets.postman_collection.json
 
 La ejecución completa crea un ticket de prueba y lo deja cerrado.
 
-## Prueba de carga con K6
+## Reporte con K6
 
-El script `k6/prueba.js` inicia sesión y consulta la salud y el listado de tickets con 5 usuarios virtuales durante 25 segundos. No escribe datos.
+El script `k6/prueba.js` consulta cuatro endpoints: salud, inicio de sesión, listado de tickets y notificaciones. Al terminar genera un reporte en `k6/index.html`.
 
 ```bash
-k6 run k6/prueba.js
+cd k6
+k6 run prueba.js
 ```
 
 Con Docker:
 
 ```bash
-docker run --rm -i --network host grafana/k6 run - < k6/prueba.js
+cd k6
+docker run --rm -i --network host -v "$PWD:/k6" -w /k6 grafana/k6 run prueba.js
 ```
 
-La dirección de la API se cambia con `-e BASE_URL=...`.
+La dirección de la API se cambia con `-e BASE_URL=...` y las credenciales con `-e CORREO=... -e CONTRASENA=...`.
 
 ## Estructura
 
@@ -205,7 +207,7 @@ La dirección de la API se cambia con `-e BASE_URL=...`.
 
 ## Variables de entorno
 
-Solo `COMPOSE_PROFILES` y `JWT_SECRET` son obligatorias. El resto tiene valor por defecto en `docker-compose.yml`: defínelas en `.env` únicamente si quieres cambiarlo.
+Solo `COMPOSE_PROFILES` y `JWT_SECRET` son obligatorias. El resto tiene valor por defecto en `docker-compose.yml`: solo es necesario definirlas en `.env` para cambiar ese valor.
 
 | Variable                               | Por defecto                    | Uso                                        |
 | -------------------------------------- | ------------------------------ | ------------------------------------------ |
@@ -241,7 +243,7 @@ NEXT_PUBLIC_API_URL=http://IP_O_DOMINIO:8080/api/v1
 docker compose up -d --build
 ```
 
-Frontend en `:8081`, API en `:8080/api/v1`. `NEXT_PUBLIC_API_URL` se compila dentro de la imagen: si cambia, reconstruye `frontend-prod`. Para 80/443 usa un reverse proxy.
+Frontend en `:8081`, API en `:8080/api/v1`. `NEXT_PUBLIC_API_URL` se compila dentro de la imagen: si cambia, hay que reconstruir `frontend-prod`. Para 80/443 se usa un reverse proxy.
 
 ### Enlace público con Cloudflare Tunnel
 
@@ -254,27 +256,27 @@ COMPOSE_PROFILES=prod,tunnel-prod
 El túnel debe existir **antes** de construir el frontend, porque la URL del API se compila dentro de la imagen. Tres pasos:
 
 ```bash
-# 1. Arranca solo los túneles y copia las dos URLs de los logs
+# 1. Se arrancan solo los túneles y se copian las dos URLs de los logs
 COMPOSE_PROFILES=tunnel-prod docker compose up -d
 docker compose logs cloudflared-prod-backend  | grep -o 'https://[a-z0-9-]*\.trycloudflare\.com'
 docker compose logs cloudflared-prod-frontend | grep -o 'https://[a-z0-9-]*\.trycloudflare\.com'
 
-# 2. Escribe las URLs en .env
+# 2. Se escriben las URLs en .env
 #    NEXT_PUBLIC_API_URL=https://<backend>.trycloudflare.com/api/v1
 #    FRONTEND_URL=https://<frontend>.trycloudflare.com
 
-# 3. Construye y arranca todo
+# 3. Se construye y se arranca todo
 docker compose up -d --build
 ```
 
-- Comparte como frontend la URL de `cloudflared-prod-frontend`.
+- La URL que se comparte es la de `cloudflared-prod-frontend`.
 - El API queda en la URL de `cloudflared-prod-backend` + `/api/v1`.
 
-En **dev** el procedimiento es más corto porque no hay build: usa `COMPOSE_PROFILES=dev,tunnel-dev`, arranca los túneles, copia las URLs a `NEXT_PUBLIC_API_URL` y `FRONTEND_URL`, y ejecuta `docker compose up -d frontend`.
+En **dev** el procedimiento es más corto porque no hay build: se usa `COMPOSE_PROFILES=dev,tunnel-dev`, se arrancan los túneles, se copian las URLs a `NEXT_PUBLIC_API_URL` y `FRONTEND_URL`, y se ejecuta `docker compose up -d frontend`.
 
-Las dos URLs son únicas para dev y prod: al cambiar de entorno ajusta o comenta sus valores, y no tengas los dos arriba a la vez con enlaces propios.
+Las dos URLs son únicas para dev y prod: al cambiar de entorno hay que ajustar o comentar sus valores, y no se deben tener los dos arriba a la vez con enlaces propios.
 
-La URL cambia cada vez que se recrea el contenedor del túnel; en producción eso obliga a repetir el paso 2. El enlace es público y sin autenticación: úsalo solo durante la demo y apágalo volviendo a `COMPOSE_PROFILES=prod` seguido de `docker compose down --remove-orphans`.
+La URL cambia cada vez que se recrea el contenedor del túnel; en producción eso obliga a repetir el paso 2. El enlace es público y sin autenticación: se usa solo durante la demo y se apaga volviendo a `COMPOSE_PROFILES=prod` seguido de `docker compose down --remove-orphans`.
 
 ## Limitaciones
 

@@ -1,7 +1,7 @@
 import { prisma } from "@/db/prisma";
 import type { Prisma } from "@/generated/prisma/client";
 
-import type { AdjuntoConTicket, CrearAdjuntoRepositoryDTO } from "./tickets.types";
+import type { CrearAdjuntoRepositoryDTO } from "./tickets.types";
 
 const adjuntoSelect = {
   id: true,
@@ -19,14 +19,14 @@ const adjuntoSelect = {
 } satisfies Prisma.ArchivoAdjuntoSelect;
 
 export class AdjuntosRepository {
-  crear(data: CrearAdjuntoRepositoryDTO): Promise<AdjuntoConTicket> {
+  crear(data: CrearAdjuntoRepositoryDTO) {
     return prisma.archivoAdjunto.create({
       data,
       select: adjuntoSelect,
     });
   }
 
-  buscarPorId(id: string): Promise<AdjuntoConTicket | null> {
+  buscarPorId(id: string) {
     return prisma.archivoAdjunto.findUnique({
       where: { id },
       select: adjuntoSelect,

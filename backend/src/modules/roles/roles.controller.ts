@@ -13,7 +13,7 @@ export class RolesController {
     const roles = await rolesService.listar();
 
     return res.status(200).json({
-      message: "Roles obtenidos con éxito",
+      message: "Lista de roles",
       data: roles,
     });
   }

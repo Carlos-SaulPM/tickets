@@ -8,9 +8,5 @@ export interface CorreoNotificacionPayload {
 }
 
 export interface ServicioCorreo {
-  /**
-   * Devuelve `false` en lugar de lanzar: un fallo del SMTP no debe tumbar
-   * la operación que originó el aviso.
-   */
   enviarCorreo(payload: CorreoNotificacionPayload): Promise<boolean>;
 }

@@ -3,12 +3,7 @@ import { ZodError } from "zod";
 
 import { ApiError } from "@/utils/api-error";
 
-export const errorHandler = (
-  error: unknown,
-  _req: Request,
-  res: Response,
-  _next: NextFunction
-): void => {
+export const errorHandler = (error: unknown, _req: Request, res: Response, _next: NextFunction) => {
   if (error instanceof ApiError) {
     res
       .status(error.status)

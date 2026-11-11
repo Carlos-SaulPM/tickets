@@ -14,7 +14,7 @@ export class AdjuntosController {
     const adjunto = await adjuntosService.crear(id, obtenerUsuario(req), req.file);
 
     return res.status(201).json({
-      message: "Imagen adjuntada correctamente",
+      message: "Imagen adjuntada",
       data: adjunto,
     });
   }

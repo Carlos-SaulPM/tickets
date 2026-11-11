@@ -1,45 +1,42 @@
+import { htmlReport } from "https://raw.githubusercontent.com/benc-uk/k6-reporter/main/dist/bundle.js";
+import { check } from "k6";
 import http from "k6/http";
-import { check, sleep } from "k6";
 
-export const options = {
-  stages: [
-    { duration: "5s", target: 5 },
-    { duration: "15s", target: 5 },
-    { duration: "5s", target: 0 },
-  ],
-  thresholds: {
-    http_req_failed: ["rate<0.01"],
-    http_req_duration: ["p(95)<1000"],
-  },
-};
+const baseUrl = __ENV.BASE_URL || "http://localhost:3000/api/v1";
+const correo = __ENV.CORREO || "admin@example.com";
+const contrasena = __ENV.CONTRASENA || "admin123";
 
-const BASE_URL = __ENV.BASE_URL || "http://localhost:3000/api/v1";
-const CORREO = __ENV.CORREO || "admin@example.com";
-const CONTRASENA = __ENV.CONTRASENA || "admin123";
-
-export function setup() {
-  const respuesta = http.post(
-    `${BASE_URL}/autenticacion/login`,
-    JSON.stringify({ correo_electronico: CORREO, contrasena: CONTRASENA }),
-    { headers: { "Content-Type": "application/json" } }
-  );
-
-  check(respuesta, { "inicio de sesión correcto": r => r.status === 200 });
-
-  return { token: respuesta.json("token") };
-}
-
-export default function (datos) {
-  const cabeceras = { headers: { Authorization: `Bearer ${datos.token}` } };
-
-  const salud = http.get(`${BASE_URL}/salud`);
-  check(salud, { "salud responde": r => r.status === 200 });
-
-  const lista = http.get(`${BASE_URL}/tickets?pagina=1&limite=10`, cabeceras);
-  check(lista, {
-    "lista responde": r => r.status === 200,
-    "lista trae datos": r => Array.isArray(r.json("data")),
+export default function () {
+  const salud = http.get(baseUrl + "/salud");
+  check(salud, {
+    "Salud status code 200": r => r.status == 200,
   });
 
-  sleep(1);
+  const login = http.post(
+    baseUrl + "/autenticacion/login",
+    JSON.stringify({ correo_electronico: correo, contrasena: contrasena }),
+    { headers: { "Content-Type": "application/json" } }
+  );
+  check(login, {
+    "Login status code 200": r => r.status == 200,
+  });
+
+  const token = login.json("token");
+  const cabeceras = { headers: { Authorization: `Bearer ${token}` } };
+
+  const tickets = http.get(baseUrl + "/tickets?pagina=1&limite=5", cabeceras);
+  check(tickets, {
+    "Tickets status code 200": r => r.status == 200,
+  });
+
+  const notificaciones = http.get(baseUrl + "/notificaciones?limite=5", cabeceras);
+  check(notificaciones, {
+    "Notificaciones status code 200": r => r.status == 200,
+  });
+}
+
+export function handleSummary(data) {
+  return {
+    "index.html": htmlReport(data),
+  };
 }

@@ -34,7 +34,7 @@ export function BotonExportarPdf({ data }: Props) {
 
       doc.setFontSize(18);
       doc.setTextColor(33, 37, 41);
-      doc.text("Reporte de Analíticas del Sistema", 14, 20);
+      doc.text("Reporte de analíticas", 14, 20);
 
       doc.setFontSize(10);
       doc.setTextColor(108, 117, 125);
@@ -49,7 +49,7 @@ export function BotonExportarPdf({ data }: Props) {
 
       autoTable(doc, {
         startY: 46,
-        head: [["Estado del Ticket", "Cantidad", "Porcentaje del Total"]],
+        head: [["Estado", "Cantidad", "Porcentaje"]],
         body: [
           [
             "Activos (Abiertos / En proceso / En revisión)",
@@ -66,13 +66,12 @@ export function BotonExportarPdf({ data }: Props) {
             data.tickets.cerrados,
             `${Math.round((data.tickets.cerrados / (data.tickets.total || 1)) * 100)}%`,
           ],
-          ["Total de Tickets Registrados", data.tickets.total, "100%"],
+          ["Total", data.tickets.total, "100%"],
         ],
         theme: "striped",
         headStyles: { fillColor: [59, 130, 246] },
       });
 
-      // 3. Tabla de Resumen de Usuarios
       const finalY = (doc as DocumentoConAutoTable).lastAutoTable?.finalY ?? 100;
 
       doc.setFontSize(14);
@@ -89,17 +88,16 @@ export function BotonExportarPdf({ data }: Props) {
             `${Math.round((data.usuarios.activos / (data.usuarios.registrados || 1)) * 100)}%`,
           ],
           [
-            "Usuarios Inactivos / Baja",
+            "Usuarios inactivos",
             data.usuarios.inactivos,
             `${Math.round((data.usuarios.inactivos / (data.usuarios.registrados || 1)) * 100)}%`,
           ],
-          ["Total Registrados en Plataforma", data.usuarios.registrados, "100%"],
+          ["Total de usuarios", data.usuarios.registrados, "100%"],
         ],
         theme: "striped",
         headStyles: { fillColor: [79, 70, 229] },
       });
 
-      // 4. Guardar archivo
       doc.save(`reporte-analiticas-${new Date().toISOString().slice(0, 10)}.pdf`);
     } catch (error) {
       console.error("Error generando PDF:", error);
