@@ -1,0 +1,646 @@
+{
+  "info": {
+    "name": "Sistema de Tickets",
+    "description": "Colección de pruebas de la API del Sistema de Tickets.\n\nSe ejecuta completa desde el Collection Runner o con newman. El orden crea un ticket, lo asigna, lo responde, propone una solución y lo cierra.\n\nAntes de ejecutar, ajustar la variable baseUrl si la API no está en localhost:3000.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api/v1"
+    }
+  ],
+  "item": [
+    {
+      "name": "01. Salud",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/salud",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "salud"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Estado ok\", () => pm.expect(pm.response.json().estado).to.eql(\"ok\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02. Login administrador",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/autenticacion/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "autenticacion",
+            "login"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"correo_electronico\": \"admin@example.com\",\n  \"contrasena\": \"admin123\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Inicia sesión\", () => pm.response.to.have.status(200));",
+              "const datos = pm.response.json();",
+              "pm.collectionVariables.set(\"adminToken\", datos.token);",
+              "pm.test(\"Rol administrador\", () => pm.expect(datos.usuario.rol).to.eql(\"Administrador\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03. Login soporte",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/autenticacion/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "autenticacion",
+            "login"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"correo_electronico\": \"soporte@example.com\",\n  \"contrasena\": \"soporte123\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Inicia sesión\", () => pm.response.to.have.status(200));",
+              "const datos = pm.response.json();",
+              "pm.collectionVariables.set(\"soporteToken\", datos.token);",
+              "pm.collectionVariables.set(\"soporteId\", datos.usuario.id);",
+              "pm.test(\"Rol soporte\", () => pm.expect(datos.usuario.rol).to.eql(\"Soporte\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04. Login usuario",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/autenticacion/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "autenticacion",
+            "login"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"correo_electronico\": \"usuario@example.com\",\n  \"contrasena\": \"usuario123\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Inicia sesión\", () => pm.response.to.have.status(200));",
+              "const datos = pm.response.json();",
+              "pm.collectionVariables.set(\"usuarioToken\", datos.token);",
+              "pm.test(\"Rol usuario\", () => pm.expect(datos.usuario.rol).to.eql(\"Usuario\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05. Listar categorías",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/categorias",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "categorias"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+              "const datos = pm.response.json().data;",
+              "pm.collectionVariables.set(\"categoriaId\", datos[0].id);",
+              "pm.test(\"Devuelve categorías\", () => pm.expect(datos.length).to.be.above(0));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06. Listar áreas activas",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/areas?activo=true",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "areas?activo=true"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+              "const datos = pm.response.json().data;",
+              "pm.collectionVariables.set(\"areaId\", datos[0].id);",
+              "pm.test(\"Devuelve áreas\", () => pm.expect(datos.length).to.be.above(0));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07. Crear ticket",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{usuarioToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/tickets",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "tickets"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"asunto\": \"Prueba desde Postman\",\n  \"descripcion\": \"Ticket creado por la colección de pruebas de la API.\",\n  \"categoria_id\": \"{{categoriaId}}\",\n  \"area_id\": \"{{areaId}}\",\n  \"prioridad\": \"Media\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Crea el ticket\", () => pm.response.to.have.status(201));",
+              "const datos = pm.response.json().data;",
+              "pm.collectionVariables.set(\"ticketId\", datos.id);",
+              "pm.test(\"Empieza abierto\", () => pm.expect(datos.estado).to.eql(\"Abierto\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08. Listar tickets del usuario",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{usuarioToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/tickets?pagina=1&limite=10",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "tickets?pagina=1&limite=10"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+              "const cuerpo = pm.response.json();",
+              "pm.test(\"Devuelve una lista\", () => pm.expect(cuerpo.data).to.be.an(\"array\"));",
+              "pm.test(\"Incluye el ticket creado\", () => pm.expect(cuerpo.data.some(t => t.id === pm.collectionVariables.get(\"ticketId\"))).to.be.true);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "09. Ver detalle del ticket",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{usuarioToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/tickets/{{ticketId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "tickets",
+            "{{ticketId}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+              "const datos = pm.response.json().data;",
+              "pm.test(\"Es el ticket creado\", () => pm.expect(datos.id).to.eql(pm.collectionVariables.get(\"ticketId\")));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. Asignar ticket a soporte",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{soporteToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/tickets/{{ticketId}}/asignar",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "tickets",
+            "{{ticketId}}",
+            "asignar"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"asignado_a_id\": \"{{soporteId}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Asigna el ticket\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Pasa a En_proceso\", () => pm.expect(pm.response.json().data.estado).to.eql(\"En_proceso\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "11. Responder el ticket",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{soporteToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/tickets/{{ticketId}}/mensajes",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "tickets",
+            "{{ticketId}}",
+            "mensajes"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"mensaje\": \"<p>Respuesta enviada desde Postman.</p>\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Registra el mensaje\", () => pm.response.to.have.status(201));",
+              "pm.test(\"No es nota interna\", () => pm.expect(pm.response.json().data.es_nota_interna).to.be.false);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "12. Proponer solución",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{soporteToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/tickets/{{ticketId}}/mensajes",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "tickets",
+            "{{ticketId}}",
+            "mensajes"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"mensaje\": \"<p>Se propone reiniciar el equipo.</p>\",\n  \"es_propuesta_solucion\": true\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Registra la propuesta\", () => pm.response.to.have.status(201));",
+              "pm.test(\"Es propuesta\", () => pm.expect(pm.response.json().data.es_propuesta_solucion).to.be.true);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "13. Aprobar la solución",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{usuarioToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/tickets/{{ticketId}}/aprobar",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "tickets",
+            "{{ticketId}}",
+            "aprobar"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Aprueba la solución\", () => pm.response.to.have.status(200));",
+              "pm.test(\"El ticket queda cerrado\", () => pm.expect(pm.response.json().data.estado).to.eql(\"Cerrado\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "14. Consultar notificaciones",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{usuarioToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/notificaciones?limite=10",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "notificaciones?limite=10"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Devuelve una lista\", () => pm.expect(pm.response.json().data).to.be.an(\"array\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "15. Consultar analíticas",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/analiticas/dashboard",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "analiticas",
+            "dashboard"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Devuelve el total de tickets\", () => pm.expect(pm.response.json().data.tickets.total).to.be.a(\"number\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "16. Listar usuarios",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/users",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "users"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Devuelve una lista\", () => pm.expect(pm.response.json().data).to.be.an(\"array\"));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -39,6 +39,50 @@ Abierto → En_proceso → En_revision → Cerrado
 - Los filtros se combinan con la visibilidad del rol: nunca amplían lo que cada rol puede ver.
 - No hay registro público: un administrador crea las cuentas y muestra la contraseña temporal una sola vez.
 
+## Diagramas
+
+Arquitectura general:
+
+```mermaid
+flowchart LR
+    N["Navegador"] --> F["Frontend Next.js<br/>:3001"]
+    N --> A["API Express<br/>:3000"]
+    F --> A
+    A --> D[("PostgreSQL<br/>:5432")]
+    A --> U[("Carpeta uploads")]
+    A --> C["SMTP o Mailpit"]
+```
+
+Modelo de datos:
+
+```mermaid
+erDiagram
+    ROLES ||--o{ USUARIOS : asigna
+    USUARIOS ||--o{ TICKETS : crea
+    USUARIOS ||--o{ TICKETS : atiende
+    CATEGORIAS ||--o{ TICKETS : clasifica
+    AREAS ||--o{ TICKETS : agrupa
+    TICKETS ||--o{ TICKET_MENSAJES : contiene
+    TICKETS ||--o{ ARCHIVOS_ADJUNTOS : adjunta
+    TICKETS ||--o{ HISTORIAL_TICKETS : registra
+    TICKETS ||--o{ NOTIFICACIONES : origina
+    TICKET_MENSAJES ||--o{ ARCHIVOS_ADJUNTOS : enlaza
+```
+
+Ciclo de un ticket:
+
+```mermaid
+stateDiagram-v2
+    [*] --> Abierto
+    Abierto --> En_proceso: tomar o asignar
+    En_proceso --> En_revision: proponer solución
+    En_revision --> Cerrado: aprobar
+    En_revision --> En_proceso: rechazar
+    Abierto --> Cerrado: cerrar
+    En_proceso --> Cerrado: cerrar
+    Cerrado --> [*]
+```
+
 ## Funcionalidades
 
 - **Acceso:** login JWT, sesión de 1 h sin refresh, aviso al volver por expiración y cierre de sesión.
@@ -109,6 +153,34 @@ Los perfiles `tunnel-*` levantan el túnel de Cloudflare. Los pasos completos es
 
 Los tests de backend usan Testcontainers: necesitan Docker y pnpm en el host, y un `backend/.env` con `DATABASE_URL` y `JWT_SECRET` (mínimo 32 caracteres). Los del frontend corren en jsdom, sin Docker.
 
+## Pruebas de API con Postman
+
+La colección está en `postman/tickets.postman_collection.json` y se importa desde Postman con File → Import. Contiene 16 peticiones ordenadas: inicia sesión con los tres roles, crea un ticket, lo asigna, lo responde, propone una solución y lo cierra.
+
+La variable `baseUrl` apunta a `http://localhost:3000/api/v1` por defecto. Si la API está en otra dirección, se cambia en la pestaña Variables de la colección.
+
+```bash
+npx newman run postman/tickets.postman_collection.json
+```
+
+La ejecución completa crea un ticket de prueba y lo deja cerrado.
+
+## Prueba de carga con K6
+
+El script `k6/prueba.js` inicia sesión y consulta la salud y el listado de tickets con 5 usuarios virtuales durante 25 segundos. No escribe datos.
+
+```bash
+k6 run k6/prueba.js
+```
+
+Con Docker:
+
+```bash
+docker run --rm -i --network host grafana/k6 run - < k6/prueba.js
+```
+
+La dirección de la API se cambia con `-e BASE_URL=...`.
+
 ## Estructura
 
 ```text
@@ -126,6 +198,8 @@ Los tests de backend usan Testcontainers: necesitan Docker y pnpm en el host, y 
 │   ├── components/      UI, layouts y flujos
 │   ├── lib/             API, sesión, consultas y helpers de servidor
 │   └── test/
+├── postman/             colección de pruebas de la API
+├── k6/                  prueba de carga
 └── docker-compose.yml
 ```
 
@@ -133,26 +207,26 @@ Los tests de backend usan Testcontainers: necesitan Docker y pnpm en el host, y 
 
 Solo `COMPOSE_PROFILES` y `JWT_SECRET` son obligatorias. El resto tiene valor por defecto en `docker-compose.yml`: defínelas en `.env` únicamente si quieres cambiarlo.
 
-| Variable                               | Por defecto                        | Uso                                        |
-| -------------------------------------- | ---------------------------------- | ------------------------------------------ |
-| `COMPOSE_PROFILES`                     | `dev`                              | `dev`, `prod` + `tunnel-dev`/`tunnel-prod` |
-| `JWT_SECRET`                           | —                                  | Firma JWT, mínimo 32 caracteres            |
-| `NEXT_PUBLIC_API_URL`                  | `:3000` (dev) / `:8080` (prod)     | API del navegador; se compila en prod      |
-| `FRONTEND_URL`                         | `:3001` (dev) / `:8081` (prod)     | Enlaces en los correos                     |
-| `API_URL_INTERNA`                      | `app:3000` / `app-prod:3000`       | API para SSR dentro de Compose             |
-| `POSTGRES_USER`                        | `postgres`                         | Usuario de PostgreSQL                      |
-| `POSTGRES_PASSWORD`                    | `postgres`                         | Contraseña de PostgreSQL                   |
-| `POSTGRES_DB`                          | `tickets`                          | Nombre de la base                          |
-| `JWT_EXPIRES_IN`                       | `3600`                             | Duración del token en segundos             |
-| `SMTP_HOST`                            | `mailpit`                          | Vacío: solo imprime correos en consola     |
-| `SMTP_PORT`                            | `1025`                             | Puerto SMTP                                |
-| `SMTP_SECURE`                          | `false`                            | `true` para TLS implícito (465)            |
-| `SMTP_USER` / `SMTP_PASS`              | —                                  | Credenciales SMTP                          |
-| `SMTP_FROM`                            | `Sistema de Tickets <…>`           | Remitente                                  |
-| `SEED_DEMO`                            | `false`                            | Carga la demo en cada `up`                 |
-| `CLOUDFLARE_TUNNEL_PROTOCOL`           | `quic`                             | `http2` si la red bloquea UDP/7844         |
-| `APP_PORT` / `FRONTEND_PORT`           | `3000` / `3001`                    | Puertos dev                                |
-| `APP_PROD_PORT` / `FRONTEND_PROD_PORT` | `8080` / `8081`                    | Puertos prod                               |
+| Variable                               | Por defecto                    | Uso                                        |
+| -------------------------------------- | ------------------------------ | ------------------------------------------ |
+| `COMPOSE_PROFILES`                     | `dev`                          | `dev`, `prod` + `tunnel-dev`/`tunnel-prod` |
+| `JWT_SECRET`                           | —                              | Firma JWT, mínimo 32 caracteres            |
+| `NEXT_PUBLIC_API_URL`                  | `:3000` (dev) / `:8080` (prod) | API del navegador; se compila en prod      |
+| `FRONTEND_URL`                         | `:3001` (dev) / `:8081` (prod) | Enlaces en los correos                     |
+| `API_URL_INTERNA`                      | `app:3000` / `app-prod:3000`   | API para SSR dentro de Compose             |
+| `POSTGRES_USER`                        | `postgres`                     | Usuario de PostgreSQL                      |
+| `POSTGRES_PASSWORD`                    | `postgres`                     | Contraseña de PostgreSQL                   |
+| `POSTGRES_DB`                          | `tickets`                      | Nombre de la base                          |
+| `JWT_EXPIRES_IN`                       | `3600`                         | Duración del token en segundos             |
+| `SMTP_HOST`                            | `mailpit`                      | Vacío: solo imprime correos en consola     |
+| `SMTP_PORT`                            | `1025`                         | Puerto SMTP                                |
+| `SMTP_SECURE`                          | `false`                        | `true` para TLS implícito (465)            |
+| `SMTP_USER` / `SMTP_PASS`              | —                              | Credenciales SMTP                          |
+| `SMTP_FROM`                            | `Sistema de Tickets <…>`       | Remitente                                  |
+| `SEED_DEMO`                            | `false`                        | Carga la demo en cada `up`                 |
+| `CLOUDFLARE_TUNNEL_PROTOCOL`           | `quic`                         | `http2` si la red bloquea UDP/7844         |
+| `APP_PORT` / `FRONTEND_PORT`           | `3000` / `3001`                | Puertos dev                                |
+| `APP_PROD_PORT` / `FRONTEND_PROD_PORT` | `8080` / `8081`                | Puertos prod                               |
 
 ## Producción
 
