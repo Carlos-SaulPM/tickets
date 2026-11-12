@@ -1492,8 +1492,15 @@ describe("API tickets cerrados", () => {
 
 interface DashboardBody {
   data: {
-    tickets: { activos: number; cerrados: number; resueltos: number; total: number };
+    tickets: {
+      activos: number;
+      cerrados: number;
+      resueltos: number;
+      total: number;
+      tiempo_promedio_cierre_horas: number | null;
+    };
     usuarios: { registrados: number; activos: number; inactivos: number };
+    soportes: Array<{ id: string; nombre: string; activos: number }>;
   };
 }
 
@@ -1522,6 +1529,40 @@ describe("API analíticas", () => {
     expect(dashboard.usuarios.activos + dashboard.usuarios.inactivos).toBe(
       dashboard.usuarios.registrados
     );
+  });
+
+  it("aplica filtros de fecha y devuelve las métricas nuevas", async () => {
+    const admin = await login("admin@example.com", "admin123");
+
+    const conDatos = await request(app)
+      .get("/api/v1/analiticas/dashboard?desde=2000-01-01")
+      .set("Authorization", `Bearer ${admin.body.token}`);
+    const sinDatos = await request(app)
+      .get("/api/v1/analiticas/dashboard?hasta=2000-01-01")
+      .set("Authorization", `Bearer ${admin.body.token}`);
+
+    expect(conDatos.status).toBe(200);
+    expect(sinDatos.status).toBe(200);
+    expect(getBody<DashboardBody>(conDatos).data.tickets.total).toBeGreaterThan(0);
+    expect(getBody<DashboardBody>(sinDatos).data.tickets.total).toBe(0);
+
+    const dashboard = getBody<DashboardBody>(conDatos).data;
+
+    expect(
+      dashboard.tickets.tiempo_promedio_cierre_horas === null ||
+        typeof dashboard.tickets.tiempo_promedio_cierre_horas === "number"
+    ).toBe(true);
+    expect(Array.isArray(dashboard.soportes)).toBe(true);
+  });
+
+  it("rechaza un rango de fechas inválido", async () => {
+    const admin = await login("admin@example.com", "admin123");
+
+    const respuesta = await request(app)
+      .get("/api/v1/analiticas/dashboard?desde=2026-12-31&hasta=2026-01-01")
+      .set("Authorization", `Bearer ${admin.body.token}`);
+
+    expect(respuesta.status).toBe(400);
   });
 
   it("rechaza el dashboard al Usuario y sin sesión", async () => {

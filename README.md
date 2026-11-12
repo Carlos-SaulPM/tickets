@@ -27,7 +27,7 @@ docker compose up -d --build
 
 - **Usuario:** crea tickets, responde solo en los suyos y aprueba o rechaza la solución propuesta.
 - **Soporte:** ve tickets sin asignar o asignados a él. Debe tomar el ticket antes de responder, puede dejar notas internas, proponer solución y cerrar los suyos.
-- **Administrador:** ve todo, reasigna, edita, cierra cualquier ticket y administra usuarios, áreas y categorías. No puede darse de baja ni asignarse el rol Administrador.
+- **Administrador:** ve todo, reasigna, edita, cierra y reabre tickets, administra usuarios, áreas y categorías, y consulta la auditoría. No puede darse de baja ni asignarse el rol Administrador.
 
 ```text
 Abierto → En_proceso → En_revision → Cerrado
@@ -35,6 +35,7 @@ Abierto → En_proceso → En_revision → Cerrado
 
 - Una propuesta de solución mueve el ticket a `En_revision`.
 - Aprobar la propuesta lo cierra; rechazarla lo devuelve a `En_proceso`.
+- Un administrador puede reabrir un ticket cerrado; vuelve a `En_proceso` si tiene Soporte asignado y a `Abierto` si no.
 - `Cerrado` y `Resuelto` no admiten mensajes ni adjuntos nuevos (`400`).
 - Los filtros se combinan con la visibilidad del rol: nunca amplían lo que cada rol puede ver.
 - No hay registro público: un administrador crea las cuentas y muestra la contraseña temporal una sola vez.
@@ -85,14 +86,16 @@ stateDiagram-v2
 
 ## Funcionalidades
 
-- **Acceso:** login JWT, sesión de 1 h sin refresh, aviso al volver por expiración y cierre de sesión.
-- **Usuarios:** alta, edición, baja y reactivación; contraseña temporal con opción de copiar.
-- **Tickets:** listado con cola (`Todos`, `Sin asignar`, `Míos`), orden, filtros y paginación; creación, detalle, edición y cierre.
+- **Acceso:** login JWT, sesión de 1 h sin refresh, aviso al volver por expiración, cambio de contraseña y cierre de sesión.
+- **Usuarios:** alta, edición, baja, reactivación, búsqueda y paginación; contraseña temporal y restablecimiento por el administrador.
+- **Catálogos:** alta, edición, activación y eliminación de áreas y categorías desde `/catalogos`.
+- **Tickets:** listado con cola (`Todos`, `Sin asignar`, `Míos`), orden, filtros y paginación; creación, detalle, edición, cierre y reapertura.
 - **Conversación:** mensajes con HTML saneado, notas internas solo para staff, propuesta de solución, aprobación y rechazo.
 - **Adjuntos:** hasta 5 imágenes de 5 MB por mensaje, con texto alternativo y enlace solo a las que siguen en el editor.
 - **Actividad:** timeline que mezcla mensajes e historial; tarjeta de Soporte asignado.
 - **Notificaciones:** campana, página `/notificaciones` y correo por cada evento relevante.
-- **Analíticas:** dashboard para Administrador y Soporte, con gráficas y exportación a PDF.
+- **Analíticas:** dashboard para Administrador y Soporte, con filtros por fecha, área, categoría y Soporte, tiempo promedio de cierre, carga por Soporte y exportación a PDF.
+- **Auditoría:** registro de acciones administrativas sobre usuarios, catálogos y tickets en `/auditoria`.
 - **Responsive:** probado de 320 a 1920 px, sin scroll horizontal.
 
 ## Datos de demostración
@@ -111,24 +114,29 @@ Las cuentas demo son `soporte2@demo.local` … `soporte5@demo.local` y `usuario2
 
 Prefijo: `/api/v1`.
 
-| Módulo         | Rutas                                                                                                    | Acceso                      |
-| -------------- | -------------------------------------------------------------------------------------------------------- | --------------------------- |
-| Autenticación  | `POST /autenticacion/login` · `GET /autenticacion/perfil`                                                | Público · JWT               |
-| Salud          | `GET /salud`                                                                                             | Público                     |
-| Usuarios       | `GET/POST /users` · `PATCH/DELETE /users/:id`                                                            | JWT + Administrador         |
-| Roles          | `GET /roles`                                                                                             | JWT + Administrador         |
-| Áreas          | `GET /areas` · `POST /areas` · `PATCH /areas/:id`                                                        | JWT · Administrador         |
-| Categorías     | `GET /categorias` · `POST /categorias` · `PATCH /categorias/:id`                                         | JWT · Administrador         |
-| Tickets        | `GET/POST /tickets` · `GET/PATCH /tickets/:id`                                                           | JWT · Administrador (PATCH) |
-| Ciclo          | `POST /tickets/:id/asignar` · `PATCH /tickets/:id/estado` · `POST /tickets/:id/aprobar` · `.../rechazar` | Admin o Soporte · Creador   |
-| Conversación   | `GET/POST /tickets/:id/mensajes` · `GET /tickets/:id/historial`                                          | JWT                         |
-| Adjuntos       | `POST /tickets/:id/adjuntos` · `GET /adjuntos/:id`                                                       | JWT (autorizado)            |
-| Notificaciones | `GET /notificaciones` · `PATCH /notificaciones/leidas` · `PATCH /notificaciones/:id/leida`               | JWT                         |
-| Analíticas     | `GET /analiticas/dashboard`                                                                              | JWT + Admin o Soporte       |
+| Módulo         | Rutas                                                                                                                    | Acceso                      |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------ | --------------------------- |
+| Autenticación  | `POST /autenticacion/login` · `GET /autenticacion/perfil` · `PATCH /autenticacion/contrasena`                            | Público · JWT               |
+| Salud          | `GET /salud`                                                                                                             | Público                     |
+| Usuarios       | `GET/POST /users` · `PATCH/DELETE /users/:id` · `POST /users/:id/contrasena`                                             | JWT + Administrador         |
+| Roles          | `GET /roles`                                                                                                             | JWT + Administrador         |
+| Áreas          | `GET /areas` · `POST /areas` · `PATCH/DELETE /areas/:id`                                                                 | JWT · Administrador         |
+| Categorías     | `GET /categorias` · `POST /categorias` · `PATCH/DELETE /categorias/:id`                                                  | JWT · Administrador         |
+| Tickets        | `GET/POST /tickets` · `GET/PATCH /tickets/:id`                                                                           | JWT · Administrador (PATCH) |
+| Ciclo          | `POST /tickets/:id/asignar` · `PATCH /tickets/:id/estado` · `POST /tickets/:id/aprobar` · `.../rechazar` · `.../reabrir` | Admin o Soporte · Creador   |
+| Conversación   | `GET/POST /tickets/:id/mensajes` · `GET /tickets/:id/historial`                                                          | JWT                         |
+| Adjuntos       | `POST /tickets/:id/adjuntos` · `GET /adjuntos/:id`                                                                       | JWT (autorizado)            |
+| Notificaciones | `GET /notificaciones` · `PATCH /notificaciones/leidas` · `PATCH /notificaciones/:id/leida`                               | JWT                         |
+| Analíticas     | `GET /analiticas/dashboard`                                                                                              | JWT + Admin o Soporte       |
+| Auditoría      | `GET /auditoria`                                                                                                         | JWT + Administrador         |
 
 `GET /tickets` acepta `estado`, `prioridad`, `area_id`, `categoria_id`, `buscar`, `asignado` (`todos`, `sin_asignar`, `mios`), `orden` (`recientes`, `actualizados`, `prioridad`), `pagina` y `limite` (máximo 100). Devuelve `{ message, data, meta }` con `meta = { pagina, limite, total, total_paginas }`.
 
-`GET /areas` acepta `?activo=true|false|all`. Los formularios de ticket deben usar `activo=true`.
+`GET /areas` y `GET /categorias` aceptan `?activo=true|false|all`. Los formularios de ticket usan `activo=true`.
+
+`GET /users` acepta `pagina`, `limite` (máximo 100), `buscar`, `estado` y `rol`. Devuelve `{ data, meta }`.
+
+`GET /analiticas/dashboard` acepta `desde`, `hasta`, `area_id`, `categoria_id` y `asignado_a_id`. El Soporte siempre ve solo sus tickets.
 
 ## Comandos
 
@@ -155,7 +163,7 @@ Los tests de backend usan Testcontainers: necesitan Docker y pnpm en el host, y 
 
 ## Pruebas de API con Postman
 
-La colección está en `postman/tickets.postman_collection.json` y se importa desde Postman con File → Import. Contiene 16 peticiones ordenadas: inicia sesión con los tres roles, crea un ticket, lo asigna, lo responde, propone una solución y lo cierra.
+La colección está en `postman/tickets.postman_collection.json` y se importa desde Postman con File → Import. Contiene 24 peticiones ordenadas: inicia sesión con los tres roles, crea un ticket, lo asigna, lo responde, propone una solución, lo cierra y lo reabre.
 
 La variable `baseUrl` apunta a `http://localhost:3000/api/v1` por defecto. Si la API está en otra dirección, se cambia en la pestaña Variables de la colección.
 
@@ -163,7 +171,7 @@ La variable `baseUrl` apunta a `http://localhost:3000/api/v1` por defecto. Si la
 npx newman run postman/tickets.postman_collection.json
 ```
 
-La ejecución completa crea un ticket de prueba y lo deja cerrado.
+La ejecución completa crea un ticket de prueba y lo deja reabierto. También crea y elimina un área y una categoría temporales.
 
 ## Reporte con K6
 
@@ -280,7 +288,6 @@ La URL cambia cada vez que se recrea el contenedor del túnel; en producción es
 
 ## Limitaciones
 
-- La UI de catálogos (áreas y categorías) aún no existe; se administran por API.
 - Soporte no se filtra por área: el schema no relaciona usuarios con áreas.
 - El cierre por inactividad no está implementado.
 - El modo oscuro tiene tokens pero no está habilitado.

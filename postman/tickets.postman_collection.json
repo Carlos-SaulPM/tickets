@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Sistema de Tickets",
-    "description": "Colección de pruebas de la API del Sistema de Tickets.\n\nSe ejecuta completa desde el Collection Runner o con newman. El orden crea un ticket, lo asigna, lo responde, propone una solución y lo cierra.\n\nAntes de ejecutar, ajustar la variable baseUrl si la API no está en localhost:3000.",
+    "description": "Colección de pruebas de la API del Sistema de Tickets.\n\nSe ejecuta completa desde el Collection Runner o con newman. El orden crea un ticket, lo asigna, lo responde, propone una solución, lo cierra y lo reabre.\n\nAntes de ejecutar, ajustar la variable baseUrl si la API no está en localhost:3000.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -586,13 +586,23 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/analiticas/dashboard",
+          "raw": "{{baseUrl}}/analiticas/dashboard?desde=2000-01-01&hasta=2100-01-01",
           "host": [
             "{{baseUrl}}"
           ],
           "path": [
             "analiticas",
             "dashboard"
+          ],
+          "query": [
+            {
+              "key": "desde",
+              "value": "2000-01-01"
+            },
+            {
+              "key": "hasta",
+              "value": "2100-01-01"
+            }
           ]
         }
       },
@@ -620,12 +630,22 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/users",
+          "raw": "{{baseUrl}}/users?pagina=1&limite=5",
           "host": [
             "{{baseUrl}}"
           ],
           "path": [
             "users"
+          ],
+          "query": [
+            {
+              "key": "pagina",
+              "value": "1"
+            },
+            {
+              "key": "limite",
+              "value": "5"
+            }
           ]
         }
       },
@@ -636,7 +656,326 @@
             "type": "text/javascript",
             "exec": [
               "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
-              "pm.test(\"Devuelve una lista\", () => pm.expect(pm.response.json().data).to.be.an(\"array\"));"
+              "pm.test(\"Devuelve una lista\", () => pm.expect(pm.response.json().data).to.be.an(\"array\"));",
+              "pm.test(\"Devuelve el total\", () => pm.expect(pm.response.json().meta.total).to.be.a(\"number\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "17. Reabrir ticket",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/tickets/{{ticketId}}/reabrir",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "tickets",
+            "{{ticketId}}",
+            "reabrir"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Reabre el ticket\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Vuelve a En_proceso\", () => pm.expect(pm.response.json().data.estado).to.eql(\"En_proceso\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "18. Consultar auditoría",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auditoria?limite=5",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auditoria?limite=5"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Devuelve registros\", () => pm.expect(pm.response.json().data).to.be.an(\"array\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "19. Crear área temporal",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/areas",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "areas"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Área temporal Postman\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Crea el área\", () => pm.response.to.have.status(201));",
+              "pm.collectionVariables.set(\"areaTemporalId\", pm.response.json().data.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "20. Editar área temporal",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/areas/{{areaTemporalId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "areas",
+            "{{areaTemporalId}}"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Área temporal Postman 2\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Edita el área\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "21. Eliminar área temporal",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/areas/{{areaTemporalId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "areas",
+            "{{areaTemporalId}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Elimina el área\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "22. Crear categoría temporal",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/categorias",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "categorias"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Categoría temporal Postman\",\n  \"descripcion\": \"Prueba\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Crea la categoría\", () => pm.response.to.have.status(201));",
+              "pm.collectionVariables.set(\"categoriaTemporalId\", pm.response.json().data.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "23. Editar categoría temporal",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/categorias/{{categoriaTemporalId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "categorias",
+            "{{categoriaTemporalId}}"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"activo\": false\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Edita la categoría\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "24. Eliminar categoría temporal",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/categorias/{{categoriaTemporalId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "categorias",
+            "{{categoriaTemporalId}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Elimina la categoría\", () => pm.response.to.have.status(200));"
             ]
           }
         }

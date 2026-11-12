@@ -1,4 +1,4 @@
-import { CheckCircle2, Clock, Ticket, UserCheck, Users, UserX } from "lucide-react";
+import { CheckCircle2, Clock, Ticket, Timer, UserCheck, Users, UserX } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { DashboardAnaliticasDTO } from "@/types/analiticas.types";
@@ -26,6 +26,15 @@ export function TarjetasMetricas({ data }: Props) {
       valor: data.tickets.cerrados,
       descripcion: "Tickets finalizados",
       icono: Ticket,
+    },
+    {
+      titulo: "Tiempo promedio de cierre",
+      valor:
+        data.tickets.tiempo_promedio_cierre_horas === null
+          ? "Sin datos"
+          : `${data.tickets.tiempo_promedio_cierre_horas} h`,
+      descripcion: "Tickets cerrados del periodo",
+      icono: Timer,
     },
   ];
 

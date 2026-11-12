@@ -1,9 +1,17 @@
 import { BotonExportarPdf } from "@/components/analiticas/boton-exportar-pdf";
+import { CargaSoportes } from "@/components/analiticas/carga-soportes";
+import { FiltrosAnaliticas } from "@/components/analiticas/filtros-analiticas";
 import { GraficasDashboard } from "@/components/analiticas/graficas-dashboard";
 import { TarjetasMetricas } from "@/components/analiticas/tarjetas-metricas";
 import { Navbar } from "@/components/layout/navbar";
-import { obtenerAnaliticasDashboard } from "@/lib/server/analiticas";
+import {
+  obtenerAnaliticasDashboard,
+  type FiltrosAnaliticas as Filtros,
+} from "@/lib/server/analiticas";
+import { obtenerAreasTodas, obtenerCategoriasTodas } from "@/lib/server/catalogos";
 import { requerirSesion } from "@/lib/server/sesion";
+import { obtenerUsuarios } from "@/lib/server/usuarios";
+import type { Usuario } from "@/types/usuario.types";
 
 export const instant = false;
 
@@ -11,7 +19,17 @@ export const metadata = {
   title: "Analíticas",
 };
 
-export default async function AnaliticasPage() {
+export default async function AnaliticasPage({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    desde?: string;
+    hasta?: string;
+    area_id?: string;
+    categoria_id?: string;
+    asignado_a_id?: string;
+  }>;
+}) {
   const { usuario } = await requerirSesion();
 
   if (usuario.rol !== "Administrador" && usuario.rol !== "Soporte") {
@@ -28,7 +46,30 @@ export default async function AnaliticasPage() {
     );
   }
 
-  const data = await obtenerAnaliticasDashboard();
+  const params = await searchParams;
+  const esAdmin = usuario.rol === "Administrador";
+  const desde = params.desde ?? "";
+  const hasta = params.hasta ?? "";
+
+  const filtros: Filtros = {};
+  if (desde) filtros.desde = desde;
+  if (hasta) filtros.hasta = hasta;
+  if (params.area_id) filtros.area_id = params.area_id;
+  if (params.categoria_id) filtros.categoria_id = params.categoria_id;
+  if (esAdmin && params.asignado_a_id) filtros.asignado_a_id = params.asignado_a_id;
+
+  const [data, areas, categorias, paginaSoportes] = await Promise.all([
+    obtenerAnaliticasDashboard(filtros),
+    obtenerAreasTodas(),
+    obtenerCategoriasTodas(),
+    esAdmin ? obtenerUsuarios({ rol: "Soporte", limite: 100 }) : Promise.resolve(null),
+  ]);
+
+  const soportes: Usuario[] = paginaSoportes?.data ?? [];
+
+  const rango: { desde?: string; hasta?: string } = {};
+  if (desde) rango.desde = desde;
+  if (hasta) rango.hasta = hasta;
 
   return (
     <div className="bg-background min-h-screen">
@@ -43,11 +84,24 @@ export default async function AnaliticasPage() {
             </p>
           </div>
 
-          <BotonExportarPdf data={data} />
+          <BotonExportarPdf data={data} rango={rango} />
         </header>
+
+        <FiltrosAnaliticas
+          desde={desde}
+          hasta={hasta}
+          areaId={params.area_id ?? ""}
+          categoriaId={params.categoria_id ?? ""}
+          asignadoId={params.asignado_a_id ?? ""}
+          areas={areas}
+          categorias={categorias}
+          soportes={soportes}
+          mostrarSoportes={esAdmin}
+        />
 
         <TarjetasMetricas data={data} />
         <GraficasDashboard data={data} />
+        <CargaSoportes soportes={data.soportes} />
       </main>
     </div>
   );

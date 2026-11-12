@@ -10,13 +10,14 @@ import type { DashboardAnaliticasDTO } from "@/types/analiticas.types";
 
 interface Props {
   data: DashboardAnaliticasDTO;
+  rango?: { desde?: string; hasta?: string };
 }
 
 type DocumentoConAutoTable = jsPDF & {
   lastAutoTable?: { finalY?: number };
 };
 
-export function BotonExportarPdf({ data }: Props) {
+export function BotonExportarPdf({ data, rango }: Props) {
   const [generando, setGenerando] = useState(false);
 
   const exportarPDF = () => {
@@ -40,15 +41,22 @@ export function BotonExportarPdf({ data }: Props) {
       doc.setTextColor(108, 117, 125);
       doc.text(`Fecha de generación: ${fechaActual}`, 14, 28);
 
+      const periodo =
+        rango?.desde || rango?.hasta
+          ? `Periodo: ${rango?.desde ?? "inicio"} a ${rango?.hasta ?? "hoy"}`
+          : "Periodo: todo el historial";
+
+      doc.text(periodo, 14, 34);
+
       doc.setDrawColor(222, 226, 230);
-      doc.line(14, 32, 196, 32);
+      doc.line(14, 40, 196, 40);
 
       doc.setFontSize(14);
       doc.setTextColor(33, 37, 41);
-      doc.text("Resumen de Tickets", 14, 42);
+      doc.text("Resumen de Tickets", 14, 50);
 
       autoTable(doc, {
-        startY: 46,
+        startY: 54,
         head: [["Estado", "Cantidad", "Porcentaje"]],
         body: [
           [

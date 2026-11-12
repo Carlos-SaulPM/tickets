@@ -3,6 +3,7 @@ export interface DashboardMetricasTickets {
   cerrados: number;
   resueltos: number;
   total: number;
+  tiempo_promedio_cierre_horas: number | null;
 }
 
 export interface DashboardMetricasUsuarios {
@@ -11,7 +12,15 @@ export interface DashboardMetricasUsuarios {
   inactivos: number;
 }
 
+export interface CargaSoporte {
+  id: string;
+  nombre: string;
+  apellido_paterno: string;
+  activos: number;
+}
+
 export interface DashboardAnaliticasDTO {
   tickets: DashboardMetricasTickets;
   usuarios: DashboardMetricasUsuarios;
+  soportes: CargaSoporte[];
 }
