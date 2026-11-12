@@ -21,6 +21,7 @@ export interface Usuario {
 export interface CrearUsuarioDTO {
   data: CrearUsuarioInput;
   rolSolicitante: NombreRol | undefined;
+  idSolicitante?: string | undefined;
 }
 
 export interface CrearUsuarioRepositoryDTO {
@@ -49,6 +50,7 @@ export interface ActualizarUsuarioRepositoryDTO {
 export interface RestablecerContrasenaDTO {
   id: string;
   rolSolicitante: NombreRol | undefined;
+  idSolicitante?: string | undefined;
 }
 
 export interface EliminarUsuarioDTO {

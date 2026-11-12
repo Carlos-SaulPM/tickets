@@ -41,3 +41,15 @@ export interface ActualizarUsuarioInput {
   rol_id?: string;
   estado?: EstadoUsuario;
 }
+
+export interface MetaUsuarios {
+  pagina: number;
+  limite: number;
+  total: number;
+  total_paginas: number;
+}
+
+export interface PaginaUsuarios {
+  data: Usuario[];
+  meta: MetaUsuarios;
+}

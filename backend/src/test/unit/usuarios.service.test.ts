@@ -35,6 +35,7 @@ const createRepositoryMock = () => ({
   buscarPorId: vi.fn(),
   crear: vi.fn(),
   actualizar: vi.fn(),
+  listarPaginado: vi.fn(),
   actualizarContrasena: vi.fn(),
   darDeBaja: vi.fn(),
 });
@@ -56,16 +57,17 @@ describe("UsuariosService", () => {
   });
 
   it("permite listar usuarios al Administrador", async () => {
-    repository.listar.mockResolvedValue([usuario]);
+    repository.listarPaginado.mockResolvedValue({ total: 1, usuarios: [usuario] });
 
-    const result = await service.listar("Administrador");
+    const result = await service.listar("Administrador", { pagina: 1, limite: 10 });
 
-    expect(result).toEqual([usuario]);
-    expect(repository.listar).toHaveBeenCalledOnce();
+    expect(result.data).toEqual([usuario]);
+    expect(result.meta.total).toBe(1);
+    expect(repository.listarPaginado).toHaveBeenCalledOnce();
   });
 
   it("rechaza listar usuarios a un rol distinto de Administrador", async () => {
-    await expect(service.listar("Soporte")).rejects.toMatchObject({
+    await expect(service.listar("Soporte", { pagina: 1, limite: 10 })).rejects.toMatchObject({
       status: 403,
     });
   });

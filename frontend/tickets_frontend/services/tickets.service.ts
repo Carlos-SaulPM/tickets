@@ -35,6 +35,11 @@ export const ticketsService = {
       body: JSON.stringify(datos),
     }).then(respuesta => respuesta.data),
 
+  reabrir: (id: string) =>
+    apiFetch<{ data: Ticket }>(`/tickets/${id}/reabrir`, { method: "POST" }).then(
+      respuesta => respuesta.data
+    ),
+
   cerrar: (id: string) =>
     apiFetch<{ data: Ticket }>(`/tickets/${id}/estado`, {
       method: "PATCH",

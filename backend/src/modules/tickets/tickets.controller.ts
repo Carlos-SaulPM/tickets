@@ -88,6 +88,18 @@ export class TicketsController {
     });
   }
 
+  static async reabrir(req: Request, res: Response) {
+    const id = requerirId(req.params);
+    const usuario = obtenerUsuario(req);
+
+    const ticket = await ticketsService.reabrir(id, usuario);
+
+    return res.status(200).json({
+      message: "Ticket reabierto",
+      data: ticket,
+    });
+  }
+
   static async obtenerMensajes(req: Request, res: Response) {
     const id = requerirId(req.params);
 

@@ -2,6 +2,7 @@ import { Router } from "express";
 
 import analiticasRouter from "@/modules/analiticas/analiticas.routes";
 import areasRouter from "@/modules/areas/areas.routes";
+import auditoriaRouter from "@/modules/auditoria/auditoria.routes";
 import { rutasAutenticacion } from "@/modules/autenticacion/autenticacion.routes";
 import categoriasRouter from "@/modules/categorias/categorias.routes";
 import rolesRouter from "@/modules/roles/roles.routes";
@@ -24,5 +25,6 @@ apiRouter.use("/tickets", ticketsRouter);
 apiRouter.use("/notificaciones", notificacionesRouter);
 apiRouter.use("/adjuntos", adjuntosRouter);
 apiRouter.use("/analiticas", analiticasRouter);
+apiRouter.use("/auditoria", auditoriaRouter);
 
 apiRouter.use("/autenticacion", rutasAutenticacion);

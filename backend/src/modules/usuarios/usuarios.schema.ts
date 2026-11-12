@@ -20,3 +20,13 @@ export const actualizarUsuarioSchema = z
 
 export type CrearUsuarioInput = z.infer<typeof crearUsuarioSchema>;
 export type ActualizarUsuarioInput = z.infer<typeof actualizarUsuarioSchema>;
+
+export const listarUsuariosQuerySchema = z.object({
+  pagina: z.coerce.number().int().positive().default(1),
+  limite: z.coerce.number().int().positive().max(100).default(10),
+  buscar: z.string().trim().optional(),
+  estado: z.enum(["Activo", "Inactivo", "Baja"]).optional(),
+  rol: z.enum(["Administrador", "Soporte", "Usuario"]).optional(),
+});
+
+export type ListarUsuariosQuery = z.infer<typeof listarUsuariosQuerySchema>;

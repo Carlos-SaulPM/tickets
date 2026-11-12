@@ -20,11 +20,19 @@ const usuarioSelect = {
 } satisfies Prisma.UsuarioSelect;
 
 export class UsuariosRepository {
-  listar() {
-    return prisma.usuario.findMany({
-      select: usuarioSelect,
-      orderBy: { creado_en: "desc" },
-    });
+  async listarPaginado(where: Prisma.UsuarioWhereInput, skip: number, take: number) {
+    const [total, usuarios] = await prisma.$transaction([
+      prisma.usuario.count({ where }),
+      prisma.usuario.findMany({
+        where,
+        select: usuarioSelect,
+        orderBy: [{ creado_en: "desc" }, { id: "asc" }],
+        skip,
+        take,
+      }),
+    ]);
+
+    return { total, usuarios };
   }
 
   buscarPorCorreo(correo_electronico: string) {

@@ -14,10 +14,7 @@ router.patch("/:id", UsuariosController.actualizar.bind(UsuariosController));
 
 router.delete("/:id", UsuariosController.eliminar.bind(UsuariosController));
 
-router.post(
-  "/:id/contrasena",
-  UsuariosController.restablecerContrasena.bind(UsuariosController)
-);
+router.post("/:id/contrasena", UsuariosController.restablecerContrasena.bind(UsuariosController));
 
 router.get("/", UsuariosController.listar.bind(UsuariosController));
 

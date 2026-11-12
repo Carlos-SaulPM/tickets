@@ -42,6 +42,22 @@ enum TipoEventoHistorial {
   PROPUESTA_SOLUCION
 }
 
+enum AccionAuditoria {
+  CREAR
+  EDITAR
+  BAJA
+  REACTIVAR
+  RESTABLECER_CONTRASENA
+  REABRIR
+}
+
+enum EntidadAuditoria {
+  USUARIO
+  AREA
+  CATEGORIA
+  TICKET
+}
+
 model Rol {
   id          String    @id @default(uuid()) @db.Uuid
   nombre      NombreRol @unique
@@ -69,6 +85,7 @@ model Usuario {
   archivos_subidos  ArchivoAdjunto[]
   historial         HistorialTicket[]
   notificaciones    Notificacion[]
+  auditoria         Auditoria[]
 
   @@index([rol_id])
   @@map("usuarios")
@@ -182,6 +199,23 @@ model HistorialTicket {
   @@index([ticket_id])
   @@index([usuario_id])
   @@map("historial_tickets")
+}
+
+model Auditoria {
+  id         String           @id @default(uuid()) @db.Uuid
+  usuario_id String           @db.Uuid
+  accion     AccionAuditoria
+  entidad    EntidadAuditoria
+  entidad_id String           @db.Uuid
+  detalle    String?
+  creado_en  DateTime         @default(now()) @db.Timestamptz(6)
+
+  usuario Usuario @relation(fields: [usuario_id], references: [id], onDelete: Restrict)
+
+  @@index([creado_en])
+  @@index([usuario_id])
+  @@index([entidad, entidad_id])
+  @@map("auditoria")
 }
 
 model Notificacion {

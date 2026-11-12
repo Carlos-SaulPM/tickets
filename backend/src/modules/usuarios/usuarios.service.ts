@@ -2,12 +2,19 @@ import { randomBytes } from "node:crypto";
 import * as argon2 from "argon2";
 
 import { Prisma } from "@/generated/prisma/client";
-import { EstadoUsuario, NombreRol } from "@/generated/prisma/enums";
+import {
+  AccionAuditoria,
+  EntidadAuditoria,
+  EstadoUsuario,
+  NombreRol,
+} from "@/generated/prisma/enums";
 import { ApiError } from "@/utils/api-error";
 import { exigirAdministrador } from "@/utils/permisos";
 
+import { auditoriaService } from "../auditoria/auditoria.service";
 import { RolesRepository } from "../roles/roles.repository";
 import { UsuariosRepository } from "./usuarios.repository";
+import type { ListarUsuariosQuery } from "./usuarios.schema";
 import type {
   ActualizarUsuarioDTO,
   ActualizarUsuarioRepositoryDTO,
@@ -35,7 +42,7 @@ export class UsuariosService {
     }
   }
 
-  async crearUsuario({ data, rolSolicitante }: CrearUsuarioDTO) {
+  async crearUsuario({ data, rolSolicitante, idSolicitante }: CrearUsuarioDTO) {
     exigirAdministrador(rolSolicitante);
     await this.validarRolAsignable(data.rol_id);
 
@@ -61,6 +68,16 @@ export class UsuariosService {
 
     try {
       const usuarioCreado = await this.repository.crear(nuevoUsuario, contrasenaHash);
+
+      if (idSolicitante) {
+        await auditoriaService.registrar({
+          usuario_id: idSolicitante,
+          accion: AccionAuditoria.CREAR,
+          entidad: EntidadAuditoria.USUARIO,
+          entidad_id: usuarioCreado.id,
+          detalle: `Correo: ${usuarioCreado.correo_electronico}`,
+        });
+      }
 
       return {
         correo_electronico: usuarioCreado.correo_electronico,
@@ -103,6 +120,16 @@ export class UsuariosService {
         throw new ApiError(404, "No se ha encontrado el usuario");
       }
 
+      if (idSolicitante) {
+        await auditoriaService.registrar({
+          usuario_id: idSolicitante,
+          accion: AccionAuditoria.REACTIVAR,
+          entidad: EntidadAuditoria.USUARIO,
+          entidad_id: reactivado.id,
+          detalle: `Correo: ${reactivado.correo_electronico}`,
+        });
+      }
+
       return reactivado;
     }
 
@@ -124,10 +151,20 @@ export class UsuariosService {
       throw new ApiError(404, "No se ha encontrado el usuario");
     }
 
+    if (idSolicitante) {
+      await auditoriaService.registrar({
+        usuario_id: idSolicitante,
+        accion: data.estado === EstadoUsuario.Baja ? AccionAuditoria.BAJA : AccionAuditoria.EDITAR,
+        entidad: EntidadAuditoria.USUARIO,
+        entidad_id: actualizado.id,
+        detalle: `Correo: ${actualizado.correo_electronico}`,
+      });
+    }
+
     return actualizado;
   }
 
-  async restablecerContrasena({ id, rolSolicitante }: RestablecerContrasenaDTO) {
+  async restablecerContrasena({ id, rolSolicitante, idSolicitante }: RestablecerContrasenaDTO) {
     exigirAdministrador(rolSolicitante);
 
     const existente = await this.repository.buscarPorId(id);
@@ -146,6 +183,16 @@ export class UsuariosService {
     });
 
     await this.repository.actualizarContrasena(id, contrasenaHash);
+
+    if (idSolicitante) {
+      await auditoriaService.registrar({
+        usuario_id: idSolicitante,
+        accion: AccionAuditoria.RESTABLECER_CONTRASENA,
+        entidad: EntidadAuditoria.USUARIO,
+        entidad_id: existente.id,
+        detalle: `Correo: ${existente.correo_electronico}`,
+      });
+    }
 
     return {
       correo_electronico: existente.correo_electronico,
@@ -172,12 +219,51 @@ export class UsuariosService {
       throw new ApiError(404, "No se ha encontrado el usuario");
     }
 
+    if (idSolicitante) {
+      await auditoriaService.registrar({
+        usuario_id: idSolicitante,
+        accion: AccionAuditoria.BAJA,
+        entidad: EntidadAuditoria.USUARIO,
+        entidad_id: dadoDeBaja.id,
+        detalle: `Correo: ${dadoDeBaja.correo_electronico}`,
+      });
+    }
+
     return dadoDeBaja;
   }
 
-  async listar(rolSolicitante: NombreRol | undefined) {
+  async listar(rolSolicitante: NombreRol | undefined, filtros: ListarUsuariosQuery) {
     exigirAdministrador(rolSolicitante);
-    return this.repository.listar();
+
+    const condiciones: Prisma.UsuarioWhereInput[] = [];
+
+    if (filtros.buscar) {
+      condiciones.push({
+        OR: [
+          { nombre: { contains: filtros.buscar, mode: "insensitive" } },
+          { apellido_paterno: { contains: filtros.buscar, mode: "insensitive" } },
+          { apellido_materno: { contains: filtros.buscar, mode: "insensitive" } },
+          { correo_electronico: { contains: filtros.buscar, mode: "insensitive" } },
+        ],
+      });
+    }
+
+    if (filtros.estado) condiciones.push({ estado: filtros.estado });
+    if (filtros.rol) condiciones.push({ rol: { nombre: filtros.rol } });
+
+    const where: Prisma.UsuarioWhereInput = condiciones.length > 0 ? { AND: condiciones } : {};
+    const skip = (filtros.pagina - 1) * filtros.limite;
+    const { total, usuarios } = await this.repository.listarPaginado(where, skip, filtros.limite);
+
+    return {
+      data: usuarios,
+      meta: {
+        pagina: filtros.pagina,
+        limite: filtros.limite,
+        total,
+        total_paginas: Math.ceil(total / filtros.limite),
+      },
+    };
   }
 
   async obtenerPorId(id: string, rolSolicitante: NombreRol | undefined) {

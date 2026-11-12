@@ -5,20 +5,22 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AccionesTicket } from "@/components/tickets/acciones-ticket";
 import type { Ticket } from "@/types/ticket.types";
 
-const { actualizarMock, cerrarMock, refreshMock, replaceMock, logoutMock } = vi.hoisted(() => ({
-  actualizarMock: vi.fn(),
-  cerrarMock: vi.fn(),
-  refreshMock: vi.fn(),
-  replaceMock: vi.fn(),
-  logoutMock: vi.fn(),
-}));
+const { actualizarMock, cerrarMock, reabrirMock, refreshMock, replaceMock, logoutMock } =
+  vi.hoisted(() => ({
+    actualizarMock: vi.fn(),
+    cerrarMock: vi.fn(),
+    reabrirMock: vi.fn(),
+    refreshMock: vi.fn(),
+    replaceMock: vi.fn(),
+    logoutMock: vi.fn(),
+  }));
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: replaceMock, refresh: refreshMock }),
 }));
 
 vi.mock("@/services/tickets.service", () => ({
-  ticketsService: { actualizar: actualizarMock, cerrar: cerrarMock },
+  ticketsService: { actualizar: actualizarMock, cerrar: cerrarMock, reabrir: reabrirMock },
 }));
 
 vi.mock("@/services/auth.service", () => ({
@@ -50,6 +52,7 @@ const propsBase = {
   ticket,
   puedeEditar: true,
   puedeCerrar: true,
+  puedeReabrir: false,
   categorias: [
     { id: "c1", nombre: "Hardware", descripcion: null, activo: true },
     { id: "c2", nombre: "Software", descripcion: null, activo: true },
@@ -60,6 +63,7 @@ const propsBase = {
 beforeEach(() => {
   actualizarMock.mockReset();
   cerrarMock.mockReset();
+  reabrirMock.mockReset();
   refreshMock.mockReset();
   replaceMock.mockReset();
   logoutMock.mockReset();
@@ -115,8 +119,23 @@ describe("AccionesTicket", () => {
     expect(refreshMock).toHaveBeenCalled();
   });
 
+  it("reabre el ticket tras confirmar", async () => {
+    const user = userEvent.setup();
+    reabrirMock.mockResolvedValue(ticket);
+
+    render(<AccionesTicket {...propsBase} puedeEditar={false} puedeCerrar={false} puedeReabrir />);
+
+    await user.click(screen.getByRole("button", { name: "Reabrir ticket" }));
+    await user.click(await screen.findByRole("button", { name: "Sí, reabrir" }));
+
+    await waitFor(() => expect(reabrirMock).toHaveBeenCalledWith(ticket.id));
+    expect(refreshMock).toHaveBeenCalled();
+  });
+
   it("no muestra acciones sin permisos", () => {
-    render(<AccionesTicket {...propsBase} puedeEditar={false} puedeCerrar={false} />);
+    render(
+      <AccionesTicket {...propsBase} puedeEditar={false} puedeCerrar={false} puedeReabrir={false} />
+    );
 
     expect(screen.queryByRole("button", { name: "Editar" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Cerrar ticket" })).not.toBeInTheDocument();

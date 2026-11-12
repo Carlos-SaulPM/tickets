@@ -26,7 +26,7 @@ export class AreasController {
   static async crear(req: Request, res: Response) {
     const datos = validar(crearAreaSchema, req.body);
 
-    const area = await areasService.crear(datos, req.usuario?.rol);
+    const area = await areasService.crear(datos, req.usuario?.rol, req.usuario?.id);
 
     return res.status(201).json({
       message: "Área creada",
@@ -37,7 +37,7 @@ export class AreasController {
   static async eliminar(req: Request, res: Response) {
     const id = requerirId(req.params);
 
-    const area = await areasService.eliminar(id, req.usuario?.rol);
+    const area = await areasService.eliminar(id, req.usuario?.rol, req.usuario?.id);
 
     return res.status(200).json({
       message: "Área eliminada",
@@ -50,7 +50,7 @@ export class AreasController {
 
     const datos = validar(actualizarAreaSchema, req.body);
 
-    const area = await areasService.actualizar(id, datos, req.usuario?.rol);
+    const area = await areasService.actualizar(id, datos, req.usuario?.rol, req.usuario?.id);
 
     return res.status(200).json({
       message: "Área actualizada",

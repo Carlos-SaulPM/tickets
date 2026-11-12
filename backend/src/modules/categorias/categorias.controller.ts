@@ -34,7 +34,7 @@ export class CategoriasController {
   static async crear(req: Request, res: Response) {
     const datos = validar(crearCategoriaSchema, req.body);
 
-    const categoria = await categoriasService.crear(datos, req.usuario?.rol);
+    const categoria = await categoriasService.crear(datos, req.usuario?.rol, req.usuario?.id);
 
     return res.status(201).json({
       message: "Categoría creada",
@@ -45,7 +45,7 @@ export class CategoriasController {
   static async eliminar(req: Request, res: Response) {
     const id = requerirId(req.params);
 
-    const categoria = await categoriasService.eliminar(id, req.usuario?.rol);
+    const categoria = await categoriasService.eliminar(id, req.usuario?.rol, req.usuario?.id);
 
     return res.status(200).json({
       message: "Categoría eliminada",
@@ -58,7 +58,12 @@ export class CategoriasController {
 
     const datos = validar(actualizarCategoriaSchema, req.body);
 
-    const categoria = await categoriasService.actualizar(id, datos, req.usuario?.rol);
+    const categoria = await categoriasService.actualizar(
+      id,
+      datos,
+      req.usuario?.rol,
+      req.usuario?.id
+    );
 
     return res.status(200).json({
       message: "Categoría actualizada",

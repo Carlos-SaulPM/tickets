@@ -3,7 +3,11 @@ import type { Request, Response } from "express";
 import { requerirId } from "@/utils/solicitud";
 import { validar } from "@/utils/validacion";
 
-import { actualizarUsuarioSchema, crearUsuarioSchema } from "./usuarios.schema";
+import {
+  actualizarUsuarioSchema,
+  crearUsuarioSchema,
+  listarUsuariosQuerySchema,
+} from "./usuarios.schema";
 import { UsuariosService } from "./usuarios.service";
 
 const usuariosService = new UsuariosService();
@@ -15,6 +19,7 @@ export class UsuariosController {
     const resultado = await usuariosService.crearUsuario({
       data: datos,
       rolSolicitante: req.usuario?.rol,
+      idSolicitante: req.usuario?.id,
     });
 
     return res.status(201).json({
@@ -47,6 +52,7 @@ export class UsuariosController {
     const resultado = await usuariosService.restablecerContrasena({
       id,
       rolSolicitante: req.usuario?.rol,
+      idSolicitante: req.usuario?.id,
     });
 
     return res.status(200).json({
@@ -70,11 +76,17 @@ export class UsuariosController {
   }
 
   static async listar(req: Request, res: Response) {
-    const usuarios = await usuariosService.listar(req.usuario?.rol);
+    const filtros = validar(
+      listarUsuariosQuerySchema,
+      req.query,
+      "Parámetros de consulta inválidos"
+    );
+
+    const resultado = await usuariosService.listar(req.usuario?.rol, filtros);
 
     return res.status(200).json({
       message: "Lista de usuarios",
-      data: usuarios,
+      ...resultado,
     });
   }
 

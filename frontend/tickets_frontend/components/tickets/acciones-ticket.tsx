@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, Pencil } from "lucide-react";
+import { CheckCircle2, Pencil, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,7 @@ interface AccionesTicketProps {
   ticket: Ticket;
   puedeEditar: boolean;
   puedeCerrar: boolean;
+  puedeReabrir: boolean;
   categorias: Categoria[];
   areas: Area[];
 }
@@ -48,6 +49,7 @@ export function AccionesTicket({
   ticket,
   puedeEditar,
   puedeCerrar,
+  puedeReabrir,
   categorias,
   areas,
 }: AccionesTicketProps) {
@@ -55,6 +57,7 @@ export function AccionesTicket({
 
   const [editando, setEditando] = useState(false);
   const [cerrando, setCerrando] = useState(false);
+  const [reabriendo, setReabriendo] = useState(false);
   const [enviando, setEnviando] = useState(false);
 
   const [asunto, setAsunto] = useState(ticket.asunto);
@@ -62,7 +65,7 @@ export function AccionesTicket({
   const [categoriaId, setCategoriaId] = useState(ticket.categoria.id);
   const [areaId, setAreaId] = useState(ticket.area?.id ?? SIN_AREA);
 
-  if (!puedeEditar && !puedeCerrar) return null;
+  if (!puedeEditar && !puedeCerrar && !puedeReabrir) return null;
 
   const manejarError = (error: unknown, mensaje: string) => {
     if (error instanceof ApiError && error.status === 401) {
@@ -109,6 +112,21 @@ export function AccionesTicket({
     }
   };
 
+  const reabrir = async () => {
+    setEnviando(true);
+
+    try {
+      await ticketsService.reabrir(ticket.id);
+      toast.success("Ticket reabierto");
+      setReabriendo(false);
+      router.refresh();
+    } catch (error) {
+      manejarError(error, "No se pudo reabrir el ticket");
+    } finally {
+      setEnviando(false);
+    }
+  };
+
   const cerrar = async () => {
     setEnviando(true);
 
@@ -137,6 +155,12 @@ export function AccionesTicket({
           <Button size="sm" onClick={() => setCerrando(true)}>
             <CheckCircle2 className="size-3.5" aria-hidden />
             Cerrar ticket
+          </Button>
+        )}
+        {puedeReabrir && (
+          <Button size="sm" variant="secondary" onClick={() => setReabriendo(true)}>
+            <RotateCcw className="size-3.5" aria-hidden />
+            Reabrir ticket
           </Button>
         )}
       </div>
@@ -228,6 +252,25 @@ export function AccionesTicket({
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={reabriendo} onOpenChange={setReabriendo}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reabrir el ticket {ticket.codigo}</DialogTitle>
+            <DialogDescription>
+              El ticket volverá a estar activo. Se avisará al creador y al Soporte asignado.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setReabriendo(false)} disabled={enviando}>
+              Cancelar
+            </Button>
+            <Button onClick={reabrir} disabled={enviando}>
+              {enviando ? "Reabriendo..." : "Sí, reabrir"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

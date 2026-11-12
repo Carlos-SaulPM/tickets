@@ -17,12 +17,21 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ModalUsuario } from "@/components/usuarios/modal-usuario";
-import { TablaUsuarios } from "@/components/usuarios/tabla-usuarios";
+import {
+  TablaUsuarios,
+  type CambiosFiltrosUsuarios,
+  type FiltrosTablaUsuarios,
+} from "@/components/usuarios/tabla-usuarios";
 import { ApiError } from "@/lib/api";
 import { authService } from "@/services/auth.service";
 import { usuariosService } from "@/services/usuarios.service";
 import type { Rol } from "@/types/rol.types";
-import type { ActualizarUsuarioInput, CrearUsuarioInput, Usuario } from "@/types/usuario.types";
+import type {
+  ActualizarUsuarioInput,
+  CrearUsuarioInput,
+  MetaUsuarios,
+  Usuario,
+} from "@/types/usuario.types";
 
 const mensajeDeError = (error: unknown) =>
   error instanceof Error ? error.message : "Error inesperado";
@@ -34,7 +43,14 @@ interface Credenciales {
   contrasena: string;
 }
 
-export function GestionUsuarios({ usuarios, roles }: { usuarios: Usuario[]; roles: Rol[] }) {
+interface GestionUsuariosProps {
+  usuarios: Usuario[];
+  roles: Rol[];
+  meta: MetaUsuarios;
+  filtros: FiltrosTablaUsuarios;
+}
+
+export function GestionUsuarios({ usuarios, roles, meta, filtros }: GestionUsuariosProps) {
   const router = useRouter();
 
   const [modalAbierto, setModalAbierto] = useState(false);
@@ -51,6 +67,20 @@ export function GestionUsuarios({ usuarios, roles }: { usuarios: Usuario[]; role
     }
 
     toast.error(mensajeDeError(error));
+  };
+
+  const navegar = (cambios: CambiosFiltrosUsuarios) => {
+    const params = new URLSearchParams();
+    const buscar = cambios.buscar !== undefined ? cambios.buscar : filtros.buscar;
+    const estado = cambios.estado !== undefined ? cambios.estado : filtros.estado;
+    const pagina = cambios.pagina ?? 1;
+
+    if (buscar) params.set("buscar", buscar);
+    if (estado && estado !== "todos") params.set("estado", estado);
+    if (pagina > 1) params.set("pagina", String(pagina));
+
+    const consulta = params.toString();
+    router.push(`/users${consulta ? `?${consulta}` : ""}`);
   };
 
   const abrirCreacion = () => {
@@ -153,6 +183,9 @@ export function GestionUsuarios({ usuarios, roles }: { usuarios: Usuario[]; role
     <>
       <TablaUsuarios
         usuarios={usuarios}
+        meta={meta}
+        filtros={filtros}
+        alNavegar={navegar}
         alEditar={abrirEdicion}
         alEliminar={setPorDarDeBaja}
         alReactivar={reactivar}

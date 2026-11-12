@@ -50,6 +50,7 @@ export default async function TicketDetailPage({ params }: { params: Promise<{ i
   const puedeProponer = atiendeSoporte && ticket.estado === "En_proceso";
   const puedeCerrar = !finalizado && (esAdmin || (esSoporte && asignadoA === sesion.usuario.id));
   const puedeEditar = esAdmin && !finalizado;
+  const puedeReabrir = esAdmin && finalizado;
 
   return (
     <div className="bg-background min-h-screen">
@@ -71,6 +72,7 @@ export default async function TicketDetailPage({ params }: { params: Promise<{ i
               ticket={ticket}
               puedeEditar={puedeEditar}
               puedeCerrar={puedeCerrar}
+              puedeReabrir={puedeReabrir}
               categorias={categorias}
               areas={areas}
             />

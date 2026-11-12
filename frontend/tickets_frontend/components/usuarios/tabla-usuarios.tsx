@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import type { FormEvent } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,13 +21,26 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { Usuario } from "@/types/usuario.types";
+import type { MetaUsuarios, Usuario } from "@/types/usuario.types";
 
 const TODOS = "todos";
-const POR_PAGINA = 10;
+
+export interface FiltrosTablaUsuarios {
+  buscar: string;
+  estado: string;
+}
+
+export interface CambiosFiltrosUsuarios {
+  buscar?: string;
+  estado?: string;
+  pagina?: number;
+}
 
 interface TablaUsuariosProps {
   usuarios: Usuario[];
+  meta: MetaUsuarios;
+  filtros: FiltrosTablaUsuarios;
+  alNavegar: (cambios: CambiosFiltrosUsuarios) => void;
   alEditar: (usuario: Usuario) => void;
   alRestablecer: (usuario: Usuario) => void;
   alEliminar: (usuario: Usuario) => void;
@@ -40,28 +53,22 @@ const nombreCompleto = (usuario: Usuario) =>
 
 export function TablaUsuarios({
   usuarios,
+  meta,
+  filtros,
+  alNavegar,
   alEditar,
   alRestablecer,
   alEliminar,
   alReactivar,
   alCrear,
 }: TablaUsuariosProps) {
-  const [busqueda, setBusqueda] = useState("");
-  const [filtroEstado, setFiltroEstado] = useState(TODOS);
-  const [pagina, setPagina] = useState(1);
+  const buscar = (evento: FormEvent<HTMLFormElement>) => {
+    evento.preventDefault();
 
-  const usuariosFiltrados = usuarios.filter(usuario => {
-    const texto = busqueda.toLowerCase();
+    const datos = new FormData(evento.currentTarget);
 
-    return (
-      (usuario.nombre.toLowerCase().includes(texto) ||
-        usuario.correo_electronico.toLowerCase().includes(texto)) &&
-      (filtroEstado === TODOS || usuario.estado === filtroEstado)
-    );
-  });
-
-  const totalPaginas = Math.ceil(usuariosFiltrados.length / POR_PAGINA) || 1;
-  const visibles = usuariosFiltrados.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA);
+    alNavegar({ buscar: String(datos.get("buscar") ?? "").trim(), pagina: 1 });
+  };
 
   const acciones = (usuario: Usuario) => (
     <>
@@ -87,31 +94,32 @@ export function TablaUsuarios({
     </>
   );
 
+  const totalPaginas = Math.max(1, meta.total_paginas);
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div className="grid w-full gap-1.5 sm:max-w-sm">
-          <Label htmlFor="buscar-usuarios">Buscar</Label>
-          <Input
-            id="buscar-usuarios"
-            placeholder="Nombre o correo"
-            value={busqueda}
-            onChange={evento => {
-              setBusqueda(evento.target.value);
-              setPagina(1);
-            }}
-          />
-        </div>
+        <form onSubmit={buscar} className="flex w-full items-end gap-2 sm:max-w-sm">
+          <div className="grid flex-1 gap-1.5">
+            <Label htmlFor="buscar-usuarios">Buscar</Label>
+            <Input
+              id="buscar-usuarios"
+              name="buscar"
+              placeholder="Nombre o correo"
+              defaultValue={filtros.buscar}
+            />
+          </div>
+          <Button type="submit" variant="outline">
+            Buscar
+          </Button>
+        </form>
 
         <div className="flex flex-wrap items-end gap-2">
           <div className="grid gap-1.5">
             <Label htmlFor="filtro-estado-usuarios">Estado</Label>
             <Select
-              value={filtroEstado}
-              onValueChange={valor => {
-                setFiltroEstado(valor);
-                setPagina(1);
-              }}
+              value={filtros.estado}
+              onValueChange={valor => alNavegar({ estado: valor, pagina: 1 })}
             >
               <SelectTrigger id="filtro-estado-usuarios" aria-label="Estado" className="w-[150px]">
                 <SelectValue />
@@ -128,14 +136,14 @@ export function TablaUsuarios({
         </div>
       </div>
 
-      {visibles.length === 0 ? (
+      {usuarios.length === 0 ? (
         <div className="text-muted-foreground rounded-md border border-dashed px-6 py-12 text-center text-sm">
           No se encontraron usuarios.
         </div>
       ) : (
         <div className="rounded-md border">
           <div className="divide-y md:hidden">
-            {visibles.map(usuario => (
+            {usuarios.map(usuario => (
               <div key={usuario.id} className="space-y-2 p-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
@@ -168,7 +176,7 @@ export function TablaUsuarios({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {visibles.map(usuario => (
+                {usuarios.map(usuario => (
                   <TableRow key={usuario.id}>
                     <TableCell className="font-medium">{nombreCompleto(usuario)}</TableCell>
                     <TableCell className="hidden lg:table-cell">
@@ -191,22 +199,22 @@ export function TablaUsuarios({
 
       <div className="text-muted-foreground flex flex-wrap items-center justify-between gap-2 text-sm">
         <span>
-          Página {pagina} de {totalPaginas} · {usuariosFiltrados.length} usuarios
+          Página {meta.pagina} de {totalPaginas} · {meta.total} usuarios
         </span>
         <div className="space-x-2">
           <Button
             size="sm"
             variant="outline"
-            disabled={pagina === 1}
-            onClick={() => setPagina(pagina - 1)}
+            disabled={meta.pagina <= 1}
+            onClick={() => alNavegar({ pagina: meta.pagina - 1 })}
           >
             Anterior
           </Button>
           <Button
             size="sm"
             variant="outline"
-            disabled={pagina === totalPaginas}
-            onClick={() => setPagina(pagina + 1)}
+            disabled={meta.pagina >= totalPaginas}
+            onClick={() => alNavegar({ pagina: meta.pagina + 1 })}
           >
             Siguiente
           </Button>

@@ -1,5 +1,7 @@
 import { Prisma } from "@/generated/prisma/client";
 import {
+  AccionAuditoria,
+  EntidadAuditoria,
   EstadoTicket,
   NombreRol,
   PrioridadTicket,
@@ -11,6 +13,7 @@ import type { UsuarioAutenticado } from "@/types/autenticacion.types";
 import { ApiError } from "@/utils/api-error";
 import { sanitizarHtml } from "@/utils/sanitizar-html";
 
+import { auditoriaService } from "../auditoria/auditoria.service";
 import { puedeVerTicket } from "./tickets.permissions";
 import { TicketRepository } from "./tickets.repository";
 import type {
@@ -354,6 +357,58 @@ export class TicketsService {
         updated.asignado_a,
         updated,
         "El ticket que tenías asignado fue cerrado",
+        "ESTADO_CAMBIADO"
+      );
+    }
+
+    return updated;
+  }
+
+  async reabrir(id: string, usuario: UsuarioAutenticado): Promise<Ticket> {
+    if (usuario.rol !== NombreRol.Administrador) {
+      throw new ApiError(403, "Solo el administrador puede reabrir un ticket");
+    }
+
+    const ticket = await this.getTicketPermitido(id, usuario);
+
+    if (ticket.estado !== EstadoTicket.Cerrado) {
+      throw new ApiError(400, "Solo se pueden reabrir tickets cerrados");
+    }
+
+    const estado = ticket.asignado_a ? EstadoTicket.En_proceso : EstadoTicket.Abierto;
+    const updated = await this.repository.updateEstado(id, estado, null);
+
+    await this.repository.crearHistorial({
+      ticket_id: ticket.id,
+      usuario_id: usuario.id,
+      tipo_evento: TipoEventoHistorial.CAMBIO_ESTADO,
+      estado_anterior: EstadoTicket.Cerrado,
+      estado_nuevo: estado,
+      detalle: "Ticket reabierto",
+    });
+
+    await auditoriaService.registrar({
+      usuario_id: usuario.id,
+      accion: AccionAuditoria.REABRIR,
+      entidad: EntidadAuditoria.TICKET,
+      entidad_id: ticket.id,
+      detalle: `${ticket.codigo}: ${ticket.asunto}`,
+    });
+
+    if (updated.usuario_creador.id !== usuario.id) {
+      await this.notificar(
+        updated.usuario_creador,
+        updated,
+        "Tu ticket fue reabierto",
+        "ESTADO_CAMBIADO"
+      );
+    }
+
+    if (updated.asignado_a && updated.asignado_a.id !== usuario.id) {
+      await this.notificar(
+        updated.asignado_a,
+        updated,
+        "El ticket que tenías asignado fue reabierto",
         "ESTADO_CAMBIADO"
       );
     }

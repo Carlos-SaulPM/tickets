@@ -1,8 +1,9 @@
 import { Prisma } from "@/generated/prisma/client";
-import { NombreRol } from "@/generated/prisma/enums";
+import { AccionAuditoria, EntidadAuditoria, NombreRol } from "@/generated/prisma/enums";
 import { ApiError } from "@/utils/api-error";
 import { exigirAdministrador } from "@/utils/permisos";
 
+import { auditoriaService } from "../auditoria/auditoria.service";
 import { CategoriaRepository } from "./categorias.repository";
 import type { ActualizarCategoriaInput, CrearCategoriaInput } from "./categorias.schema";
 
@@ -16,11 +17,23 @@ export class CategoriasService {
     return this.repository.listar(activo);
   }
 
-  async crear(data: CrearCategoriaInput, rolSolicitante?: NombreRol) {
+  async crear(data: CrearCategoriaInput, rolSolicitante?: NombreRol, idSolicitante?: string) {
     exigirAdministrador(rolSolicitante);
 
     try {
-      return await this.repository.crear(data);
+      const categoria = await this.repository.crear(data);
+
+      if (idSolicitante) {
+        await auditoriaService.registrar({
+          usuario_id: idSolicitante,
+          accion: AccionAuditoria.CREAR,
+          entidad: EntidadAuditoria.CATEGORIA,
+          entidad_id: categoria.id,
+          detalle: categoria.nombre,
+        });
+      }
+
+      return categoria;
     } catch (error) {
       if (esNombreDuplicado(error)) {
         throw new ApiError(409, "La categoría ya existe");
@@ -30,7 +43,7 @@ export class CategoriasService {
     }
   }
 
-  async eliminar(id: string, rolSolicitante?: NombreRol) {
+  async eliminar(id: string, rolSolicitante?: NombreRol, idSolicitante?: string) {
     exigirAdministrador(rolSolicitante);
 
     const categoria = await this.repository.buscarPorId(id);
@@ -42,15 +55,33 @@ export class CategoriasService {
     const tickets = await this.repository.contarTickets(id);
 
     if (tickets > 0) {
-      throw new ApiError(400, "La categoría tiene tickets asociados; se puede desactivar en lugar de eliminarla");
+      throw new ApiError(
+        400,
+        "La categoría tiene tickets asociados; se puede desactivar en lugar de eliminarla"
+      );
     }
 
     await this.repository.eliminar(id);
 
+    if (idSolicitante) {
+      await auditoriaService.registrar({
+        usuario_id: idSolicitante,
+        accion: AccionAuditoria.BAJA,
+        entidad: EntidadAuditoria.CATEGORIA,
+        entidad_id: categoria.id,
+        detalle: categoria.nombre,
+      });
+    }
+
     return categoria;
   }
 
-  async actualizar(id: string, data: ActualizarCategoriaInput, rolSolicitante?: NombreRol) {
+  async actualizar(
+    id: string,
+    data: ActualizarCategoriaInput,
+    rolSolicitante?: NombreRol,
+    idSolicitante?: string
+  ) {
     exigirAdministrador(rolSolicitante);
 
     try {
@@ -58,6 +89,16 @@ export class CategoriasService {
 
       if (!categoria) {
         throw new ApiError(404, "No se ha encontrado la categoría");
+      }
+
+      if (idSolicitante) {
+        await auditoriaService.registrar({
+          usuario_id: idSolicitante,
+          accion: AccionAuditoria.EDITAR,
+          entidad: EntidadAuditoria.CATEGORIA,
+          entidad_id: categoria.id,
+          detalle: categoria.nombre,
+        });
       }
 
       return categoria;

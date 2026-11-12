@@ -446,6 +446,7 @@ interface HistorialDto {
   tipo_evento: string;
   estado_anterior: string | null;
   estado_nuevo: string | null;
+  detalle: string | null;
 }
 
 interface HistorialListBody {
@@ -1761,5 +1762,175 @@ describe("API contraseñas", () => {
       .set("Authorization", `Bearer ${admin.body.token}`);
 
     expect(restablecida.status).toBe(400);
+  });
+});
+
+describe("API reapertura de tickets", () => {
+  it("reabre un ticket cerrado y vuelve a Abierto si no tiene Soporte", async () => {
+    const admin = await login("admin@example.com", "admin123");
+    const creador = await crearOtroUsuario();
+    const ticketId = await crearTicket(creador.body.token);
+
+    await request(app)
+      .patch(`/api/v1/tickets/${ticketId}/estado`)
+      .set("Authorization", `Bearer ${admin.body.token}`)
+      .send({ estado: "Cerrado" });
+
+    const reabierto = await request(app)
+      .post(`/api/v1/tickets/${ticketId}/reabrir`)
+      .set("Authorization", `Bearer ${admin.body.token}`);
+
+    expect(reabierto.status).toBe(200);
+    expect(getBody<TicketBody>(reabierto).data.estado).toBe("Abierto");
+    expect(getBody<TicketBody>(reabierto).data.fecha_cierre).toBeNull();
+
+    const historial = await request(app)
+      .get(`/api/v1/tickets/${ticketId}/historial`)
+      .set("Authorization", `Bearer ${admin.body.token}`);
+
+    expect(
+      getBody<HistorialListBody>(historial).data.some(
+        evento => evento.detalle === "Ticket reabierto"
+      )
+    ).toBe(true);
+  });
+
+  it("reabre a En_proceso cuando el ticket tiene Soporte asignado", async () => {
+    const admin = await login("admin@example.com", "admin123");
+    const soporte = await crearOtroUsuario("Soporte");
+    const creador = await crearOtroUsuario();
+    const ticketId = await crearTicket(creador.body.token);
+
+    await request(app)
+      .post(`/api/v1/tickets/${ticketId}/asignar`)
+      .set("Authorization", `Bearer ${soporte.body.token}`)
+      .send({ asignado_a_id: soporte.body.usuario.id });
+
+    await request(app)
+      .patch(`/api/v1/tickets/${ticketId}/estado`)
+      .set("Authorization", `Bearer ${admin.body.token}`)
+      .send({ estado: "Cerrado" });
+
+    const reabierto = await request(app)
+      .post(`/api/v1/tickets/${ticketId}/reabrir`)
+      .set("Authorization", `Bearer ${admin.body.token}`);
+
+    expect(reabierto.status).toBe(200);
+    expect(getBody<TicketBody>(reabierto).data.estado).toBe("En_proceso");
+  });
+
+  it("rechaza reabrir a quien no es administrador y un ticket abierto", async () => {
+    const admin = await login("admin@example.com", "admin123");
+    const creador = await crearOtroUsuario();
+    const ticketId = await crearTicket(creador.body.token);
+
+    const abierto = await request(app)
+      .post(`/api/v1/tickets/${ticketId}/reabrir`)
+      .set("Authorization", `Bearer ${admin.body.token}`);
+
+    expect(abierto.status).toBe(400);
+
+    await request(app)
+      .patch(`/api/v1/tickets/${ticketId}/estado`)
+      .set("Authorization", `Bearer ${admin.body.token}`)
+      .send({ estado: "Cerrado" });
+
+    const delCreador = await request(app)
+      .post(`/api/v1/tickets/${ticketId}/reabrir`)
+      .set("Authorization", `Bearer ${creador.body.token}`);
+
+    expect(delCreador.status).toBe(403);
+  });
+});
+
+describe("API auditoría", () => {
+  it("registra acciones administrativas y las devuelve al Administrador", async () => {
+    const admin = await login("admin@example.com", "admin123");
+    const nombre = `Auditada ${Date.now()}`;
+
+    await request(app)
+      .post("/api/v1/areas")
+      .set("Authorization", `Bearer ${admin.body.token}`)
+      .send({ nombre });
+
+    const auditoria = await request(app)
+      .get("/api/v1/auditoria?entidad=AREA&limite=100")
+      .set("Authorization", `Bearer ${admin.body.token}`);
+
+    expect(auditoria.status).toBe(200);
+
+    const cuerpo = getBody<{
+      data: Array<{ accion: string; entidad: string; detalle: string | null }>;
+      meta: { total: number };
+    }>(auditoria);
+
+    expect(cuerpo.meta.total).toBeGreaterThan(0);
+    expect(
+      cuerpo.data.some(registro => registro.accion === "CREAR" && registro.detalle === nombre)
+    ).toBe(true);
+  });
+
+  it("rechaza la auditoría a otros roles", async () => {
+    const soporte = await login("soporte@example.com", "soporte123");
+    const usuario = await login("usuario@example.com", "usuario123");
+
+    const delSoporte = await request(app)
+      .get("/api/v1/auditoria")
+      .set("Authorization", `Bearer ${soporte.body.token}`);
+    const delUsuario = await request(app)
+      .get("/api/v1/auditoria")
+      .set("Authorization", `Bearer ${usuario.body.token}`);
+
+    expect(delSoporte.status).toBe(403);
+    expect(delUsuario.status).toBe(403);
+  });
+});
+
+describe("API usuarios: paginación y búsqueda", () => {
+  it("pagina y devuelve meta", async () => {
+    const admin = await login("admin@example.com", "admin123");
+
+    const respuesta = await request(app)
+      .get("/api/v1/users?pagina=1&limite=5")
+      .set("Authorization", `Bearer ${admin.body.token}`);
+
+    expect(respuesta.status).toBe(200);
+
+    const cuerpo = getBody<{ data: UserDto[]; meta: { total: number; total_paginas: number } }>(
+      respuesta
+    );
+
+    expect(cuerpo.data).toHaveLength(5);
+    expect(cuerpo.meta.total).toBeGreaterThan(5);
+    expect(cuerpo.meta.total_paginas).toBeGreaterThan(1);
+  });
+
+  it("busca por correo y filtra por rol", async () => {
+    const admin = await login("admin@example.com", "admin123");
+
+    const busqueda = await request(app)
+      .get("/api/v1/users?buscar=admin@example.com")
+      .set("Authorization", `Bearer ${admin.body.token}`);
+
+    expect(getBody<{ data: UserDto[] }>(busqueda).data).toHaveLength(1);
+
+    const soportes = await request(app)
+      .get("/api/v1/users?rol=Soporte&limite=100")
+      .set("Authorization", `Bearer ${admin.body.token}`);
+
+    const cuerpo = getBody<{ data: Array<UserDto & { rol: { nombre: string } }> }>(soportes);
+
+    expect(cuerpo.data.length).toBeGreaterThan(0);
+    expect(cuerpo.data.every(usuario => usuario.rol.nombre === "Soporte")).toBe(true);
+  });
+
+  it("rechaza la paginación a roles sin permiso", async () => {
+    const soporte = await login("soporte@example.com", "soporte123");
+
+    const respuesta = await request(app)
+      .get("/api/v1/users?pagina=1&limite=5")
+      .set("Authorization", `Bearer ${soporte.body.token}`);
+
+    expect(respuesta.status).toBe(403);
   });
 });
