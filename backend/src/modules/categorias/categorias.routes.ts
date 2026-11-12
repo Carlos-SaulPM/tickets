@@ -11,5 +11,6 @@ router.use(authMiddleware);
 router.get("/", CategoriasController.listar.bind(CategoriasController));
 router.post("/", CategoriasController.crear.bind(CategoriasController));
 router.patch("/:id", CategoriasController.actualizar.bind(CategoriasController));
+router.delete("/:id", CategoriasController.eliminar.bind(CategoriasController));
 
 export default router;

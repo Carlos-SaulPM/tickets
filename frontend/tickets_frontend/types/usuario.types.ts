@@ -25,9 +25,12 @@ export interface CrearUsuarioInput {
   rol_id: string;
 }
 
-export interface CrearUsuarioResponse {
+export interface CredencialesUsuario {
   correo_electronico: string;
   contrasena: string;
+}
+
+export interface CrearUsuarioResponse extends CredencialesUsuario {
   user: Usuario;
 }
 

@@ -87,6 +87,7 @@ model Categoria {
   id          String   @id @default(uuid()) @db.Uuid
   nombre      String   @unique @db.VarChar(50)
   descripcion String?
+  activo      Boolean  @default(true)
   tickets     Ticket[]
 
   @@map("categorias")

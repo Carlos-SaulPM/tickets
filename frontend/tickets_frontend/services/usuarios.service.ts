@@ -3,6 +3,7 @@ import type {
   ActualizarUsuarioInput,
   CrearUsuarioInput,
   CrearUsuarioResponse,
+  CredencialesUsuario,
 } from "@/types/usuario.types";
 
 const RUTA_USUARIOS = "/users";
@@ -24,4 +25,9 @@ export const usuariosService = {
     apiFetch(`${RUTA_USUARIOS}/${id}`, {
       method: "DELETE",
     }),
+
+  restablecerContrasena: (id: string) =>
+    apiFetch<{ data: CredencialesUsuario }>(`${RUTA_USUARIOS}/${id}/contrasena`, {
+      method: "POST",
+    }).then(respuesta => respuesta.data),
 };

@@ -34,6 +34,17 @@ export class AreasController {
     });
   }
 
+  static async eliminar(req: Request, res: Response) {
+    const id = requerirId(req.params);
+
+    const area = await areasService.eliminar(id, req.usuario?.rol);
+
+    return res.status(200).json({
+      message: "Área eliminada",
+      data: area,
+    });
+  }
+
   static async actualizar(req: Request, res: Response) {
     const id = requerirId(req.params);
 

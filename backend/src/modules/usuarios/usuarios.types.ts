@@ -46,6 +46,11 @@ export interface ActualizarUsuarioRepositoryDTO {
   estado?: EstadoUsuario;
 }
 
+export interface RestablecerContrasenaDTO {
+  id: string;
+  rolSolicitante: NombreRol | undefined;
+}
+
 export interface EliminarUsuarioDTO {
   id: string;
   rolSolicitante: NombreRol | undefined;

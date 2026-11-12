@@ -51,6 +51,14 @@ export class UsuariosRepository {
     });
   }
 
+  actualizarContrasena(id: string, contrasena: string) {
+    return prisma.usuario.update({
+      where: { id },
+      data: { contrasena },
+      select: usuarioSelect,
+    });
+  }
+
   async actualizar(id: string, data: ActualizarUsuarioRepositoryDTO) {
     const result = await prisma.usuario.updateMany({
       where: { id },

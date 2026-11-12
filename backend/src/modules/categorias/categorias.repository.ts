@@ -7,13 +7,15 @@ const categoriaSelect = {
   id: true,
   nombre: true,
   descripcion: true,
+  activo: true,
 } as const;
 
 export class CategoriaRepository {
-  listar() {
+  listar(activo?: boolean) {
     return prisma.categoria.findMany({
       select: categoriaSelect,
       orderBy: { nombre: "asc" },
+      ...(activo === undefined ? {} : { where: { activo } }),
     });
   }
 
@@ -29,9 +31,19 @@ export class CategoriaRepository {
       data: {
         nombre: data.nombre,
         descripcion: data.descripcion ?? null,
+        activo: data.activo ?? true,
       },
       select: categoriaSelect,
     });
+  }
+
+  contarTickets(id: string) {
+    return prisma.ticket.count({ where: { categoria_id: id } });
+  }
+
+  async eliminar(id: string) {
+    const result = await prisma.categoria.deleteMany({ where: { id } });
+    return result.count > 0;
   }
 
   async actualizar(id: string, data: ActualizarCategoriaInput) {
@@ -39,6 +51,7 @@ export class CategoriaRepository {
 
     if (data.nombre !== undefined) updateData.nombre = data.nombre;
     if (data.descripcion !== undefined) updateData.descripcion = data.descripcion;
+    if (data.activo !== undefined) updateData.activo = data.activo;
 
     const result = await prisma.categoria.updateMany({
       where: { id },

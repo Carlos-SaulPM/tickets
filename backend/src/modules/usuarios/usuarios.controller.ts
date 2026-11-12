@@ -41,6 +41,20 @@ export class UsuariosController {
     });
   }
 
+  static async restablecerContrasena(req: Request, res: Response) {
+    const id = requerirId(req.params);
+
+    const resultado = await usuariosService.restablecerContrasena({
+      id,
+      rolSolicitante: req.usuario?.rol,
+    });
+
+    return res.status(200).json({
+      message: "Contraseña restablecida",
+      data: resultado,
+    });
+  }
+
   static async eliminar(req: Request, res: Response) {
     const id = requerirId(req.params);
 

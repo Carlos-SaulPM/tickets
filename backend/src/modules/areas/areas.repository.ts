@@ -35,6 +35,15 @@ export class AreaRepository {
     });
   }
 
+  contarTickets(id: string) {
+    return prisma.ticket.count({ where: { area_id: id } });
+  }
+
+  async eliminar(id: string) {
+    const result = await prisma.area.deleteMany({ where: { id } });
+    return result.count > 0;
+  }
+
   async actualizar(id: string, data: ActualizarAreaInput) {
     const updateData: Prisma.AreaUpdateManyMutationInput = {};
 

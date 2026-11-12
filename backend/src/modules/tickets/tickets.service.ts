@@ -74,6 +74,10 @@ export class TicketsService {
     if (!categoria) {
       throw new ApiError(400, "La categoría especificada no existe");
     }
+
+    if (!categoria.activo) {
+      throw new ApiError(400, "La categoría especificada está inactiva");
+    }
   }
 
   private async validarArea(area_id: string | null): Promise<void> {

@@ -1544,3 +1544,222 @@ describe("API salud", () => {
     expect(getBody<{ estado: string }>(respuesta).estado).toBe("ok");
   });
 });
+
+describe("API catálogos: borrado y estado", () => {
+  const sufijo = () => `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+
+  it("elimina un área sin tickets", async () => {
+    const admin = await login("admin@example.com", "admin123");
+    const nombre = `Temporal ${sufijo()}`;
+
+    const creada = await request(app)
+      .post("/api/v1/areas")
+      .set("Authorization", `Bearer ${admin.body.token}`)
+      .send({ nombre });
+
+    const area = getBody<AreaBody>(creada).data;
+
+    expect(creada.status).toBe(201);
+
+    const eliminada = await request(app)
+      .delete(`/api/v1/areas/${area.id}`)
+      .set("Authorization", `Bearer ${admin.body.token}`);
+
+    expect(eliminada.status).toBe(200);
+
+    const listado = await request(app)
+      .get("/api/v1/areas?activo=all")
+      .set("Authorization", `Bearer ${admin.body.token}`);
+
+    expect(getBody<AreaListBody>(listado).data.some(item => item.id === area.id)).toBe(false);
+  });
+
+  it("rechaza eliminar un área con tickets", async () => {
+    const admin = await login("admin@example.com", "admin123");
+    const usuario = await login("usuario@example.com", "usuario123");
+    const nombre = `En uso ${sufijo()}`;
+
+    const creada = await request(app)
+      .post("/api/v1/areas")
+      .set("Authorization", `Bearer ${admin.body.token}`)
+      .send({ nombre });
+
+    const area = getBody<AreaBody>(creada).data;
+    const categorias = await request(app)
+      .get("/api/v1/categorias")
+      .set("Authorization", `Bearer ${admin.body.token}`);
+    const categoria = getBody<CategoriaListBody>(categorias).data[0];
+
+    const ticket = await request(app)
+      .post("/api/v1/tickets")
+      .set("Authorization", `Bearer ${usuario.body.token}`)
+      .send({
+        asunto: `Área en uso ${sufijo()}`,
+        descripcion: "Ticket para probar el borrado de un área en uso.",
+        categoria_id: categoria?.id,
+        area_id: area.id,
+      });
+
+    expect(ticket.status).toBe(201);
+
+    const eliminada = await request(app)
+      .delete(`/api/v1/areas/${area.id}`)
+      .set("Authorization", `Bearer ${admin.body.token}`);
+
+    expect(eliminada.status).toBe(400);
+  });
+
+  it("crea, desactiva y elimina una categoría", async () => {
+    const admin = await login("admin@example.com", "admin123");
+    const nombre = `Categoría ${sufijo()}`;
+
+    const creada = await request(app)
+      .post("/api/v1/categorias")
+      .set("Authorization", `Bearer ${admin.body.token}`)
+      .send({ nombre, descripcion: "Temporal" });
+
+    const categoria = getBody<{ data: { id: string; activo: boolean } }>(creada).data;
+
+    expect(creada.status).toBe(201);
+    expect(categoria.activo).toBe(true);
+
+    await request(app)
+      .patch(`/api/v1/categorias/${categoria.id}`)
+      .set("Authorization", `Bearer ${admin.body.token}`)
+      .send({ activo: false });
+
+    const activas = await request(app)
+      .get("/api/v1/categorias?activo=true")
+      .set("Authorization", `Bearer ${admin.body.token}`);
+
+    expect(getBody<CategoriaListBody>(activas).data.some(item => item.id === categoria.id)).toBe(
+      false
+    );
+
+    const eliminada = await request(app)
+      .delete(`/api/v1/categorias/${categoria.id}`)
+      .set("Authorization", `Bearer ${admin.body.token}`);
+
+    expect(eliminada.status).toBe(200);
+  });
+
+  it("rechaza un ticket con categoría inactiva", async () => {
+    const admin = await login("admin@example.com", "admin123");
+    const usuario = await login("usuario@example.com", "usuario123");
+
+    const creada = await request(app)
+      .post("/api/v1/categorias")
+      .set("Authorization", `Bearer ${admin.body.token}`)
+      .send({ nombre: `Inactiva ${sufijo()}` });
+
+    const categoria = getBody<{ data: { id: string } }>(creada).data;
+
+    await request(app)
+      .patch(`/api/v1/categorias/${categoria.id}`)
+      .set("Authorization", `Bearer ${admin.body.token}`)
+      .send({ activo: false });
+
+    const ticket = await request(app)
+      .post("/api/v1/tickets")
+      .set("Authorization", `Bearer ${usuario.body.token}`)
+      .send({
+        asunto: "Categoría inactiva",
+        descripcion: "No debería crearse.",
+        categoria_id: categoria.id,
+      });
+
+    expect(ticket.status).toBe(400);
+
+    await request(app)
+      .delete(`/api/v1/categorias/${categoria.id}`)
+      .set("Authorization", `Bearer ${admin.body.token}`);
+  });
+});
+
+describe("API contraseñas", () => {
+  it("permite cambiar la contraseña propia y restablecerla como administrador", async () => {
+    const admin = await login("admin@example.com", "admin123");
+    const roles = await getRoles(admin.body.token);
+    const rolUsuario = roles.body.data.find(role => role.nombre === "Usuario");
+    const correo = `contrasena-${Date.now()}@example.com`;
+
+    const creado = await request(app)
+      .post("/api/v1/users")
+      .set("Authorization", `Bearer ${admin.body.token}`)
+      .send({
+        nombre: "Contraseña",
+        apellido_paterno: "Prueba",
+        apellido_materno: "Sistema",
+        correo_electronico: correo,
+        rol_id: rolUsuario?.id,
+      });
+
+    const inicial = getBody<CreateUserBody>(creado).data;
+
+    expect(creado.status).toBe(201);
+
+    const sesion = await login(correo, inicial.contrasena);
+
+    expect(sesion.response.status).toBe(200);
+
+    const cambio = await request(app)
+      .patch("/api/v1/autenticacion/contrasena")
+      .set("Authorization", `Bearer ${sesion.body.token}`)
+      .send({ actual: inicial.contrasena, nueva: "nuevaClave123" });
+
+    expect(cambio.status).toBe(200);
+    expect((await login(correo, "nuevaClave123")).response.status).toBe(200);
+    expect((await login(correo, inicial.contrasena)).response.status).toBe(401);
+
+    const restablecida = await request(app)
+      .post(`/api/v1/users/${inicial.user.id}/contrasena`)
+      .set("Authorization", `Bearer ${admin.body.token}`);
+
+    const nueva = getBody<{ data: { contrasena: string } }>(restablecida).data;
+
+    expect(restablecida.status).toBe(200);
+    expect((await login(correo, nueva.contrasena)).response.status).toBe(200);
+    expect((await login(correo, "nuevaClave123")).response.status).toBe(401);
+  });
+
+  it("rechaza el cambio con la contraseña actual incorrecta", async () => {
+    const usuario = await login("usuario@example.com", "usuario123");
+
+    const cambio = await request(app)
+      .patch("/api/v1/autenticacion/contrasena")
+      .set("Authorization", `Bearer ${usuario.body.token}`)
+      .send({ actual: "incorrecta", nueva: "otraClave123" });
+
+    expect(cambio.status).toBe(400);
+  });
+
+  it("rechaza restablecer la contraseña a un usuario dado de baja", async () => {
+    const admin = await login("admin@example.com", "admin123");
+    const roles = await getRoles(admin.body.token);
+    const rolUsuario = roles.body.data.find(role => role.nombre === "Usuario");
+    const correo = `baja-clave-${Date.now()}@example.com`;
+
+    const creado = await request(app)
+      .post("/api/v1/users")
+      .set("Authorization", `Bearer ${admin.body.token}`)
+      .send({
+        nombre: "Baja",
+        apellido_paterno: "Contraseña",
+        apellido_materno: "Prueba",
+        correo_electronico: correo,
+        rol_id: rolUsuario?.id,
+      });
+
+    const usuario = getBody<CreateUserBody>(creado).data;
+
+    await request(app)
+      .delete(`/api/v1/users/${usuario.user.id}`)
+      .set("Authorization", `Bearer ${admin.body.token}`);
+
+    const restablecida = await request(app)
+      .post(`/api/v1/users/${usuario.user.id}/contrasena`)
+      .set("Authorization", `Bearer ${admin.body.token}`);
+
+    expect(restablecida.status).toBe(400);
+  });
+});

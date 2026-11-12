@@ -23,7 +23,12 @@ vi.mock("@/services/auth.service", () => ({
 }));
 
 const categorias = [
-  { id: "11111111-1111-4111-8111-111111111111", nombre: "Hardware", descripcion: null },
+  {
+    id: "11111111-1111-4111-8111-111111111111",
+    nombre: "Hardware",
+    descripcion: null,
+    activo: true,
+  },
 ];
 const areas = [{ id: "22222222-2222-4222-8222-222222222222", nombre: "Sistemas", activo: true }];
 

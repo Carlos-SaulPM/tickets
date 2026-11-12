@@ -16,3 +16,16 @@ export const buscarUsuarioPorCorreo = (correo_electronico: string) =>
       },
     },
   });
+
+export const buscarContrasenaPorId = (id: string) =>
+  prisma.usuario.findUnique({
+    where: { id },
+    select: { contrasena: true, estado: true },
+  });
+
+export const actualizarContrasena = (id: string, contrasena: string) =>
+  prisma.usuario.update({
+    where: { id },
+    data: { contrasena },
+    select: { id: true },
+  });

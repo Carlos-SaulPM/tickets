@@ -3,10 +3,18 @@ import jwt from "jsonwebtoken";
 
 import { env } from "@/config/env";
 import { EstadoUsuario } from "@/generated/prisma/enums";
-import type { DatosLogin, UsuarioAutenticado } from "@/types/autenticacion.types";
+import type {
+  DatosCambioContrasena,
+  DatosLogin,
+  UsuarioAutenticado,
+} from "@/types/autenticacion.types";
 import { ApiError } from "@/utils/api-error";
 
-import { buscarUsuarioPorCorreo } from "./autenticacion.repository";
+import {
+  actualizarContrasena,
+  buscarContrasenaPorId,
+  buscarUsuarioPorCorreo,
+} from "./autenticacion.repository";
 
 const firmarToken = (usuario: UsuarioAutenticado) =>
   jwt.sign(usuario, env.JWT_SECRET, { expiresIn: env.JWT_EXPIRES_IN });
@@ -36,4 +44,25 @@ export const iniciarSesion = async (datos: DatosLogin) => {
   };
 
   return { token: firmarToken(usuarioPublico), usuario: usuarioPublico };
+};
+
+export const cambiarContrasena = async (
+  usuario: UsuarioAutenticado,
+  datos: DatosCambioContrasena
+) => {
+  const actual = await buscarContrasenaPorId(usuario.id);
+
+  if (!actual) {
+    throw new ApiError(401, "No autorizado");
+  }
+
+  const coincide = await argon2.verify(actual.contrasena, datos.actual);
+
+  if (!coincide) {
+    throw new ApiError(400, "La contraseña actual no es correcta");
+  }
+
+  const hash = await argon2.hash(datos.nueva, { type: argon2.argon2id });
+
+  await actualizarContrasena(usuario.id, hash);
 };

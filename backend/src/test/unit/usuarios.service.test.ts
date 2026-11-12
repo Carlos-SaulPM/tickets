@@ -35,6 +35,7 @@ const createRepositoryMock = () => ({
   buscarPorId: vi.fn(),
   crear: vi.fn(),
   actualizar: vi.fn(),
+  actualizarContrasena: vi.fn(),
   darDeBaja: vi.fn(),
 });
 

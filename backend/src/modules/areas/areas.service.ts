@@ -30,6 +30,26 @@ export class AreasService {
     }
   }
 
+  async eliminar(id: string, rolSolicitante?: NombreRol) {
+    exigirAdministrador(rolSolicitante);
+
+    const area = await this.repository.buscarPorId(id);
+
+    if (!area) {
+      throw new ApiError(404, "No se ha encontrado el área");
+    }
+
+    const tickets = await this.repository.contarTickets(id);
+
+    if (tickets > 0) {
+      throw new ApiError(400, "El área tiene tickets asociados; se puede desactivar en lugar de eliminarla");
+    }
+
+    await this.repository.eliminar(id);
+
+    return area;
+  }
+
   async actualizar(id: string, data: ActualizarAreaInput, rolSolicitante?: NombreRol) {
     exigirAdministrador(rolSolicitante);
 

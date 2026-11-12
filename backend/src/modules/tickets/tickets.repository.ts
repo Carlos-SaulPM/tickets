@@ -184,7 +184,7 @@ export class TicketRepository {
   buscarCategoriaPorId(id: string) {
     return prisma.categoria.findUnique({
       where: { id },
-      select: { id: true, nombre: true },
+      select: { id: true, nombre: true, activo: true },
     });
   }
 

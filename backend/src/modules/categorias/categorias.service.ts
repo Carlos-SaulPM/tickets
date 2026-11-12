@@ -12,8 +12,8 @@ const esNombreDuplicado = (error: unknown) =>
 export class CategoriasService {
   constructor(private readonly repository: CategoriaRepository = new CategoriaRepository()) {}
 
-  async listar() {
-    return this.repository.listar();
+  async listar(activo?: boolean) {
+    return this.repository.listar(activo);
   }
 
   async crear(data: CrearCategoriaInput, rolSolicitante?: NombreRol) {
@@ -28,6 +28,26 @@ export class CategoriasService {
 
       throw error;
     }
+  }
+
+  async eliminar(id: string, rolSolicitante?: NombreRol) {
+    exigirAdministrador(rolSolicitante);
+
+    const categoria = await this.repository.buscarPorId(id);
+
+    if (!categoria) {
+      throw new ApiError(404, "No se ha encontrado la categoría");
+    }
+
+    const tickets = await this.repository.contarTickets(id);
+
+    if (tickets > 0) {
+      throw new ApiError(400, "La categoría tiene tickets asociados; se puede desactivar en lugar de eliminarla");
+    }
+
+    await this.repository.eliminar(id);
+
+    return categoria;
   }
 
   async actualizar(id: string, data: ActualizarCategoriaInput, rolSolicitante?: NombreRol) {

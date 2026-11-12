@@ -126,6 +126,20 @@ export function GestionUsuarios({ usuarios, roles }: { usuarios: Usuario[]; role
     }
   };
 
+  const restablecerContrasena = async (usuario: Usuario) => {
+    setProcesando(true);
+
+    try {
+      const datos = await usuariosService.restablecerContrasena(usuario.id);
+      setCredenciales(datos);
+      toast.success("Contraseña restablecida");
+    } catch (error) {
+      manejarError(error);
+    } finally {
+      setProcesando(false);
+    }
+  };
+
   const copiar = async (texto: string, etiqueta: string) => {
     try {
       await navigator.clipboard.writeText(texto);
@@ -142,6 +156,7 @@ export function GestionUsuarios({ usuarios, roles }: { usuarios: Usuario[]; role
         alEditar={abrirEdicion}
         alEliminar={setPorDarDeBaja}
         alReactivar={reactivar}
+        alRestablecer={restablecerContrasena}
         alCrear={abrirCreacion}
       />
 

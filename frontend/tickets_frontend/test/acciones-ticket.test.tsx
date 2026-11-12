@@ -51,8 +51,8 @@ const propsBase = {
   puedeEditar: true,
   puedeCerrar: true,
   categorias: [
-    { id: "c1", nombre: "Hardware", descripcion: null },
-    { id: "c2", nombre: "Software", descripcion: null },
+    { id: "c1", nombre: "Hardware", descripcion: null, activo: true },
+    { id: "c2", nombre: "Software", descripcion: null, activo: true },
   ],
   areas: [{ id: "a1", nombre: "Sistemas", activo: true }],
 };

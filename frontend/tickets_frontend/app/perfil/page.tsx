@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { BotonCerrarSesion } from "@/components/auth/boton-cerrar-sesion";
 import { Navbar } from "@/components/layout/navbar";
+import { FormularioContrasena } from "@/components/perfil/formulario-contrasena";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -60,6 +61,16 @@ export default async function PerfilPage() {
               )}
               <BotonCerrarSesion />
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Contraseña</CardTitle>
+            <CardDescription>Cambia la contraseña con la que inicias sesión.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <FormularioContrasena />
           </CardContent>
         </Card>
       </main>

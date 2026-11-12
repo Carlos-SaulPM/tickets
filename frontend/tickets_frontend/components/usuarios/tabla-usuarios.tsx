@@ -29,6 +29,7 @@ const POR_PAGINA = 10;
 interface TablaUsuariosProps {
   usuarios: Usuario[];
   alEditar: (usuario: Usuario) => void;
+  alRestablecer: (usuario: Usuario) => void;
   alEliminar: (usuario: Usuario) => void;
   alReactivar: (usuario: Usuario) => void;
   alCrear: () => void;
@@ -40,6 +41,7 @@ const nombreCompleto = (usuario: Usuario) =>
 export function TablaUsuarios({
   usuarios,
   alEditar,
+  alRestablecer,
   alEliminar,
   alReactivar,
   alCrear,
@@ -73,9 +75,14 @@ export function TablaUsuarios({
           Reactivar
         </Button>
       ) : (
-        <Button size="sm" variant="destructive" onClick={() => alEliminar(usuario)}>
-          Dar de baja
-        </Button>
+        <>
+          <Button size="sm" variant="secondary" onClick={() => alRestablecer(usuario)}>
+            Contraseña
+          </Button>
+          <Button size="sm" variant="destructive" onClick={() => alEliminar(usuario)}>
+            Dar de baja
+          </Button>
+        </>
       )}
     </>
   );

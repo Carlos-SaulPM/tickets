@@ -37,6 +37,9 @@ export function Navbar() {
     ...(sesion?.usuario.rol === "Administrador"
       ? [{ href: "/users", etiqueta: "Usuarios", activo: pathname === "/users" }]
       : []),
+    ...(sesion?.usuario.rol === "Administrador"
+      ? [{ href: "/catalogos", etiqueta: "Catálogos", activo: pathname === "/catalogos" }]
+      : []),
     ...(sesion?.usuario.rol === "Administrador" || sesion?.usuario.rol === "Soporte"
       ? [{ href: "/analiticas", etiqueta: "Analíticas", activo: pathname === "/analiticas" }]
       : []),

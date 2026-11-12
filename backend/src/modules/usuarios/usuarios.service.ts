@@ -14,6 +14,7 @@ import type {
   CrearUsuarioDTO,
   CrearUsuarioRepositoryDTO,
   EliminarUsuarioDTO,
+  RestablecerContrasenaDTO,
 } from "./usuarios.types";
 
 export class UsuariosService {
@@ -124,6 +125,32 @@ export class UsuariosService {
     }
 
     return actualizado;
+  }
+
+  async restablecerContrasena({ id, rolSolicitante }: RestablecerContrasenaDTO) {
+    exigirAdministrador(rolSolicitante);
+
+    const existente = await this.repository.buscarPorId(id);
+
+    if (!existente) {
+      throw new ApiError(404, "No se ha encontrado el usuario");
+    }
+
+    if (existente.estado === EstadoUsuario.Baja) {
+      throw new ApiError(400, "No se puede modificar un usuario dado de baja");
+    }
+
+    const contrasenaGenerada = randomBytes(24).toString("base64url");
+    const contrasenaHash = await argon2.hash(contrasenaGenerada, {
+      type: argon2.argon2id,
+    });
+
+    await this.repository.actualizarContrasena(id, contrasenaHash);
+
+    return {
+      correo_electronico: existente.correo_electronico,
+      contrasena: contrasenaGenerada,
+    };
   }
 
   async eliminar({ id, rolSolicitante, idSolicitante }: EliminarUsuarioDTO) {
